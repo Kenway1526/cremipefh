@@ -1,0 +1,5 @@
+# Local Netlify folder
+/node_modules
+/dist
+/.angular
+/.netlify

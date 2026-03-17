@@ -1,0 +1,93 @@
+<div class="modulo-contenedor-principal">
+  
+  <h2 class="main-title">Administración: Checador Oficinas</h2>
+
+  <button class="btn-interfaz-azul" (click)="modoEdicion = !modoEdicion">
+    {{ modoEdicion ? 'CERRAR EDICIÓN DE PERSONAL' : 'CONFIGURAR HORARIOS Y PERSONAL' }}
+  </button>
+
+  <div class="panel-edicion-premium" *ngIf="modoEdicion">
+    <table class="tabla-config-personal">
+      <thead>
+        <tr>
+          <th>ID Empleado</th>
+          <th>Nombre Completo</th>
+          <th>Inicio Retardo</th>
+          <th>Límite Falta</th>
+          <th>Activo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of reglas">
+          <td><input [(ngModel)]="r.id_empleado" class="input-config"></td>
+          <td><input [(ngModel)]="r.nombre_completo" class="input-config"></td>
+          <td><input type="time" [(ngModel)]="r.limite_retardo_inicio" class="input-config"></td>
+          <td><input type="time" [(ngModel)]="r.limite_retardo_fin" class="input-config"></td>
+          <td><input type="checkbox" [(ngModel)]="r.activo" class="chk-config-gigante"></td>
+          <td>
+            <button (click)="actualizarRegla(r)" class="btn-accion-icono">💾</button>
+            <button (click)="eliminarRegla(r.id_empleado)" class="btn-accion-icono">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <button class="btn-interfaz-verde" (click)="agregarRegla()">+ AGREGAR NUEVO EMPLEADO</button>
+  </div>
+
+  <hr>
+
+  <div class="layout-expandido">
+    <div class="zona-fechas-separadas">
+      <label>
+        <span style="font-weight: bold; color: #1a237e;">INICIO RANGO:</span>
+        <input type="date" [(ngModel)]="fechaInicioStr" class="custom-picker">
+      </label>
+      <label>
+        <span style="font-weight: bold; color: #1a237e;">FIN RANGO:</span>
+        <input type="date" [(ngModel)]="fechaFinStr" class="custom-picker">
+      </label>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px; justify-content: flex-end;">
+      <span style="font-weight: bold; color: #1a237e;">REPORTE BINARIO (.XLS):</span>
+      <input type="file" (change)='onFileChange($event)' class="btn-interfaz-azul">
+    </div>
+  </div>
+
+  <button class="btn-ejecutar-procesar" (click)="generarProcesamiento()">
+    PROCESAR ASISTENCIA DE OFICINAS
+  </button>
+
+  <div class="contenedor-resultados-premium" *ngIf="resultadosTabla">
+    <table id="tabla-ofi-resultados" class="tabla-asistencia-reporte tabla-con-bordes">
+      <thead>
+        <tr>
+          <th rowspan="2" class="sticky-col">Empleado</th>
+          <th *ngFor="let dia of diasParaTabla" colspan="3" class="dia-header">
+            {{ dia | date:'dd/MM' }}
+          </th>
+        </tr>
+        <tr class="sub-headers-frl">
+          <ng-container *ngFor="let dia of diasParaTabla">
+            <th>F</th><th>R</th><th>L</th>
+          </ng-container>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of reglas" class="fila-cebra">
+          <td class="sticky-col">{{ r.nombre_completo }}</td>
+          <ng-container *ngFor="let dia of diasParaTabla">
+            <td class="col-falta">{{ obtenerEstado(r.id_empleado, dia, 'F') }}</td>
+            <td class="col-retardo">{{ obtenerEstado(r.id_empleado, dia, 'R') }}</td>
+            <td class="col-limite">{{ obtenerEstado(r.id_empleado, dia, 'L') }}</td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+    
+    <button class="btn-descargar-excel-formateado" (click)="exportarExcelResultados()">
+      DESCARGAR REPORTE FINAL (.XLSX)
+    </button>
+  </div>
+</div>

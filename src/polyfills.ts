@@ -1,0 +1,1 @@
+import 'zone.js';  // Necesario para que Angular detecte cambios en la UI
