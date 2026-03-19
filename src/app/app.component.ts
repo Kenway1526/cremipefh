@@ -13,6 +13,12 @@ export class AppComponent {
   subModulo: string | null = null;    // Ej: 'asistencia'
   subDepartamento: string | null = null; // Ej: 'sec' o 'ofi'
 
+  /*
+  moduloPadre: string | null = 'toluca'; 
+  autenticado: boolean = true;
+  subModulo: string | null = null; // Cámbialo a 'asistencia' si quieres entrar directo al excel
+  subDepartamento: string | null = null;*/
+
   // --- NOTIFICACIONES ---
   msg$ = this.notificaciones.notificacion$;
 

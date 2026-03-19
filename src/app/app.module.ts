@@ -11,7 +11,7 @@ import { LoginComponent } from './components/login/login.component';
 import { AppRoutingModule } from './app-routing.module'; // <--- 1. ASEGÚRATE QUE ESTÉ IMPORTADO
 import { ReglasService } from './services/reglas.service';
 import { AuthService } from './services/auth.service';
-
+import { LucideAngularModule, Settings, X, Plus, Save, Trash2, Upload, FileSpreadsheet, Calendar, Play, Download, Check } from 'lucide-angular';
 @NgModule({
   declarations: [
     AppComponent,
@@ -23,7 +23,9 @@ import { AuthService } from './services/auth.service';
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    HttpClientModule
+    HttpClientModule,
+    CommonModule,
+    LucideAngularModule.pick({ Settings, X, Plus, Save, Trash2, Upload, FileSpreadsheet, Calendar, Play, Download, Check })
   ],
   providers: [ReglasService, AuthService],
   bootstrap: [AppComponent]

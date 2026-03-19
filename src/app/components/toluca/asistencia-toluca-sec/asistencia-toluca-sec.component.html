@@ -1,22 +1,28 @@
 <div class="modulo-contenedor-principal">
   
   <div class="fila-cabecera">
-    <h2 class="titulo-principal">Checador Toluca</h2>
-    <button (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul">
-      {{ modoEdicion ? '✖️ CERRAR CONFIGURACIÓN' : '⚙️ GESTIONAR PERSONAL' }}
+    <h2 class="titulo-principal">Checador Secundaria</h2>
+    <button (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul btn-gestion-personal">
+      <span class="icono-btn">{{ modoEdicion ? '✖️' : '⚙️' }}</span>
+      {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL SEC' }}
     </button>
   </div>
 
   <div *ngIf="modoEdicion" class="panel-edicion-premium">
     <div class="edicion-header">
-      <h3 class="subtitulo-seccion">Configuración de Personal</h3>
+      <h3 class="subtitulo-seccion">Configuración de Personal de Secundaria</h3>
       <button (click)="agregarRegla()" class="btn-interfaz-verde">+ AGREGAR EMPLEADO</button>
     </div>
     <div class="contenedor-tabla-scroll">
       <table class="tabla-config-personal">
         <thead>
           <tr>
-            <th>ID</th><th>Nombre Completo</th><th>Inicio</th><th>Fin</th><th class="txt-center">Activo</th><th class="txt-center">Acciones</th>
+            <th>ID</th>
+            <th>Nombre Completo</th>
+            <th>Inicio Retardo</th>
+            <th>Límite Falta</th>
+            <th class="txt-center">Activo</th>
+            <th class="txt-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -38,34 +44,47 @@
     </div>
   </div>
 
-  <div class="layout-expandido">
+  <div class="layout-expandido" style="justify-content: flex-start; gap: 25px;">
     <div class="zona-archivo">
-      <input type="file" (change)="onFileChange($event)" id="archivo" style="display: none;">
-      <label for="archivo" class="caja-drop-moderna">📂 {{ fileName }}</label>
+      <input type="file" (change)="onFileChange($event)" id="archivo-sec" style="display: none;">
+      <label for="archivo-sec" class="btn-archivo-estilo">
+        <span class="icono-folder">📁</span>
+        <div class="texto-archivo">
+          <span class="nombre-archivo">{{ fileName || 'Sin archivo seleccionado' }}</span>
+          <span class="subtexto-archivo">(Reporte Secundaria .xls)</span>
+        </div>
+      </label>
     </div>
+    
     <div class="zona-fechas-separadas">
       <div class="campo-fecha">
-        <label>Inicio:</label>
+        <label>Inicio Rango:</label>
         <input type="date" [(ngModel)]="fechaInicioStr" class="input-picker custom-picker">
       </div>
       <div class="campo-fecha">
-        <label>Finalización:</label>
+        <label>Fin Rango:</label>
         <input type="date" [(ngModel)]="fechaFinStr" class="input-picker custom-picker">
       </div>
     </div>
   </div>
 
   <div class="seccion-acciones-master">
-    <button (click)="generarProcesamiento()" class="btn-ejecutar-procesar">PROCESAR ASISTENCIA</button>
-    <button *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">DESCARGAR EXCEL</button>
+    <button (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
+      PROCESAR ASISTENCIA SECUNDARIA
+    </button>
+    <button *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
+      DESCARGAR REPORTE FINAL
+    </button>
   </div>
 
   <div *ngIf="resultadosTabla" class="contenedor-resultados-premium">
     <table id="tabla-sec-resultados" class="tabla-asistencia-reporte tabla-con-bordes">
       <thead>
         <tr>
-          <th rowspan="2" class="sticky-col">Personal</th>
-          <th *ngFor="let dia of diasParaTabla" colspan="3" class="dia-header">{{ dia | date:'dd/MM' }}</th>
+          <th rowspan="2" class="sticky-col">Personal Secundaria</th>
+          <th *ngFor="let dia of diasParaTabla" colspan="3" class="dia-header">
+            {{ dia | date:'dd/MM' }}
+          </th>
         </tr>
         <tr class="sub-headers-frl">
           <ng-container *ngFor="let dia of diasParaTabla">
@@ -74,15 +93,15 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let id of resultadosTabla | keyvalue; let i = index" [class.fila-cebra]="i % 2 === 0">
+        <tr *ngFor="let res of resultadosTabla | keyvalue; let i = index" [class.fila-cebra]="i % 2 === 0">
           <td class="sticky-col name-cell">
-            <strong>{{ $any(id.value).nombre }}</strong><br>
-            <span class="id-tag">ID: {{ id.key }}</span>
+            <strong>{{ $any(res.value).nombre }}</strong><br>
+            <span class="id-tag" style="color: #666; font-size: 0.7rem;">ID: {{ res.key }}</span>
           </td>
           <ng-container *ngFor="let dia of diasParaTabla">
-            <td class="col-falta border-cell">{{ obtenerEstado(id.key, dia, 'F') }}</td>
-            <td class="col-retardo border-cell">{{ obtenerEstado(id.key, dia, 'R') }}</td>
-            <td class="col-limite border-cell">{{ obtenerEstado(id.key, dia, 'L') }}</td>
+            <td class="col-falta border-cell">{{ obtenerEstado(res.key, dia, 'F') }}</td>
+            <td class="col-retardo border-cell">{{ obtenerEstado(res.key, dia, 'R') }}</td>
+            <td class="col-limite border-cell">{{ obtenerEstado(res.key, dia, 'L') }}</td>
           </ng-container>
         </tr>
       </tbody>
