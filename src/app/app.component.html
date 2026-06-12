@@ -1,79 +1,81 @@
-<div class="dashboard-container">
+<div class="dashboard-container" *ngIf="!cargandoSesion">
   
-  <nav class="main-nav">
-    <div class="nav-brand" (click)="salir()">
-      <h1 class="brand-text">SISTEMA DE ASISTENCIA <span style="font-weight: 800;">Talento Humano</span></h1>
+  <nav class="main-nav" *ngIf="autenticado || moduloPadre">
+    <div class="nav-brand" (click)="irAlInicio()">
+      <h1 class="brand-text">SISTEMA DE ASISTENCIA <span class="brand-highlight">Talento Humano</span></h1>
     </div>
     
-    <div class="nav-actions" *ngIf="moduloPadre">
-      <button class="mega-btn-volver" *ngIf="subModulo" (click)="subModulo = null; subDepartamento = null">
-        VOLVER AL MENÚ
+    <div class="nav-actions" *ngIf="autenticado">
+      <button class="mega-btn-volver" (click)="irAlInicio()" *ngIf="router.url !== '/' || rolUsuario === 'admin'">
+        {{ router.url !== '/' ? 'VOLVER AL MENÚ' : 'CAMBIAR SEDE' }}
       </button>
-      
+
       <button class="mega-btn-salir" (click)="salir()">
         CERRAR SESIÓN
       </button>
     </div>
   </nav>
 
-  <div *ngIf="!moduloPadre" class="full-screen-center">
+  <div *ngIf="router.url === '/' && !moduloPadre && !autenticado" class="full-screen-center">
     <h1 class="main-title">Seleccione Plantel</h1>
     <div class="grid-sedes">
       <div class="card-sede" (click)="entrarAArea('aeropuerto')">
-        <span class="icon">✈️</span>
-        <span class="text">Aeropuerto</span>
+        <span class="icon">✈️</span><span class="text">Aeropuerto</span>
       </div>
       <div class="card-sede" (click)="entrarAArea('calimaya')">
-        <span class="icon">🏫</span>
-        <span class="text">Calimaya</span>
+        <span class="icon">🏫</span><span class="text">Calimaya</span>
       </div>
       <div class="card-sede" (click)="entrarAArea('toluca')">
-        <span class="icon">🏛️</span>
-        <span class="text">Toluca</span>
+        <span class="icon">🏛️</span><span class="text">Toluca</span>
       </div>
     </div>
   </div>
 
-  <div *ngIf="moduloPadre && !autenticado" class="mega-login-wrapper">
-    <div class="mega-login-card">
-      <app-login 
-        [sedeSeleccionada]="moduloPadre" 
-        (onSuccess)="alCompletarLogin($event)">
-      </app-login>
-    </div>
+  <div *ngIf="router.url === '/' && moduloPadre && !autenticado" class="mega-login-wrapper">
+    <app-login [sedeSeleccionada]="moduloPadre" (onSuccess)="alCompletarLogin($event)"></app-login>
   </div>
 
-  <div *ngIf="moduloPadre === 'toluca' && autenticado && !subModulo" class="full-screen-center">
-    <h2 class="main-title">Módulos: Toluca</h2>
+  <div *ngIf="router.url === '/' && autenticado && moduloPadre" class="full-screen-center">
+    <h2 class="main-title">Módulos: {{ moduloPadre | uppercase }}</h2>
     <div class="grid-sedes" style="justify-content: center;">
-      <div class="card-sede" (click)="abrirHerramienta('asistencia', 'sec')">
-        <span class="icon">📑</span>
-        <span class="text">Checador secundaria</span>
-      </div>
-      <div class="card-sede" (click)="abrirHerramienta('asistencia', 'ofi')">
-        <span class="icon">🏢</span>
-        <span class="text">Checador oficinas</span>
-      </div>
+      
+      <ng-container *ngIf="moduloPadre === 'toluca'">
+        <div class="card-sede" (click)="router.navigate(['/toluca/asistencia-sec'])">
+          <span class="icon">📑</span><span class="text">Secundaria Toluca</span>
+        </div>
+        <div class="card-sede" (click)="router.navigate(['/toluca/asistencia-ofi'])">
+          <span class="icon">🏢</span><span class="text">Oficinas Toluca</span>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="moduloPadre === 'calimaya'">
+        <div class="card-sede" (click)="router.navigate(['/calimaya/asistencia-cal'])">
+          <span class="icon">🌳</span><span class="text">Calimaya</span>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="moduloPadre === 'aeropuerto'">
+        <div class="card-sede" (click)="router.navigate(['/aeropuerto/asistencia-esq'])">
+          <span class="icon">🛫</span><span class="text">Aero Esquina</span>
+        </div>
+        <div class="card-sede" (click)="router.navigate(['/aeropuerto/asistencia-hac'])">
+          <span class="icon">🏨</span><span class="text">Aero Hacienda</span>
+        </div>
+      </ng-container>
     </div>
   </div>
 
-  <div *ngIf="subModulo === 'asistencia' && moduloPadre === 'toluca' && autenticado" class="full-width-processor">
-    <app-asistencia-toluca-sec *ngIf="subDepartamento === 'sec'"></app-asistencia-toluca-sec>
-    
-    <app-asistencia-toluca-ofi *ngIf="subDepartamento === 'ofi'"></app-asistencia-toluca-ofi>
-  </div>
+  <main class="main-content" *ngIf="autenticado && router.url !== '/'">
+    <router-outlet></router-outlet>
+  </main>
 
-  <div *ngIf="msg$ | async as n" class="toast-container" [ngClass]="n.tipo">
+  <div *ngIf="msg$ | async as n" class="notificacion-toast" [ngClass]="n.tipo">
     <div class="toast-content">
-      <span class="toast-icon">
-        {{ n.tipo === 'exito' ? '✅' : n.tipo === 'error' ? '❌' : '⚠️' }}
-      </span>
+      <span class="toast-icon">{{ n.tipo === 'exito' ? '✅' : '⚠️' }}</span>
       <div class="toast-text">
-        <strong style="display: block; text-transform: uppercase; font-size: 0.8rem;">{{ n.tipo }}</strong>
+        <strong class="toast-status">{{ n.tipo | uppercase }}</strong>
         <span>{{ n.mensaje }}</span>
       </div>
     </div>
-    <div class="toast-progress"></div>
   </div>
-
 </div>

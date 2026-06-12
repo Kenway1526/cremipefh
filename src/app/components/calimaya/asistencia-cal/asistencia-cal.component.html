@@ -1,20 +1,14 @@
 <div class="modulo-contenedor-principal">
   
-  <!-- CABECERA CONTROLADA PARA EVITAR DESBORDES -->
   <div class="fila-cabecera">
-    <div class="cabecera-titulo-box">
-      <h2 class="titulo-principal">Checador Secundaria</h2>
-    </div>
-    <div class="cabecera-boton-box">
-      <button (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul btn-gestion-personal">
-        <span class="icono-btn">{{ modoEdicion ? '✖️' : '⚙️' }}</span>
-        {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL SEC' }}
-      </button>
-    </div>
+    <h2 class="titulo-principal">Checador Calimaya</h2>
+    <button (click)="showConfig = !showConfig" class="btn-interfaz-azul btn-gestion-personal">
+      <span class="icono-btn">{{ showConfig ? '✖️' : '⚙️' }}</span>
+      {{ showConfig ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL CAL' }}
+    </button>
   </div>
 
-  <!-- PANEL DE CONFIGURACIÓN DE PERSONAL -->
-  <div *ngIf="modoEdicion" class="panel-edicion-premium">
+  <div *ngIf="showConfig" class="panel-edicion-premium">
     <div class="edicion-header">
       <h3 class="subtitulo-seccion">Configuración de Personal de Calimaya</h3>
        <div class="acciones-config-container">
@@ -50,7 +44,7 @@
         <tbody>
           <tr *ngFor="let r of reglas">
             <td><input [(ngModel)]="r.id_empleado" class="input-config"></td>
-            <td><input [(ngModel)]="r.nombre_completo" class="input-config"></td>
+            <td><input [(ngModel)]="r.nombre_completo" class="input-config" style="text-align: left; padding-left: 10px;"></td>
             <td>
               <div class="input-falso-hora" (click)="abrirTimePicker(r, 'inicio')">
                 {{ r.limite_retardo_inicio }} 🕒
@@ -62,13 +56,13 @@
               </div>
             </td>
             <td class="txt-center"><input type="checkbox" [(ngModel)]="r.activo" class="chk-config-gigante"></td>
+            
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- MODAL SELECCIÓN DE HORA (TIMEPICKER) -->
   <div class="modal-time-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
     <div class="modal-time-content" (click)="$event.stopPropagation()">
       <h3 class="time-title">Seleccionar Hora</h3>
@@ -98,19 +92,18 @@
     </div>
   </div>
 
-  <!-- CONTROLES DE RANGO Y SUBIDA DE ARCHIVOS -->
   <div class="layout-controles-asistencia">
     
-    <div class="bloque-archivo">
+    <div class="bloque-control-archivo">
       <input type="file" (change)="onFileChange($event)" id="archivo-cal" style="display: none;">
-      <label for="archivo-cal" class="card-archivo-mini">
-        <div class="icon-box">📁</div>
-        <div class="info-archivo">
-          <span class="txt-principal">{{ fileName || 'Sin archivo seleccionado' }}</span>
+      <label for="archivo-cal" class="card-archivo-estetica">
+        <div class="icon-archivo">📁</div>
+        <div class="info-texto">
+          <span class="label-archivo">{{ fileName || 'Sin archivo' }}</span>
         </div>
       </label>
     </div>
-    
+
     <div class="grupo-fechas-estetico">
       <div class="input-fecha-personalizado" (click)="abrirCalendario('inicio')">
         <label class="label-flotante">INICIO RANGO</label>
@@ -136,7 +129,6 @@
       </div>
     </div>
 
-    <!-- MODAL CALENDARIO -->
     <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
       <div class="modal-calendario-content" (click)="$event.stopPropagation()">
         
@@ -164,71 +156,43 @@
 
   </div>
 
-  <!-- DISPARADORES DE ACCIÓN -->
   <div class="seccion-acciones-master">
     <button (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
-      PROCESAR ASISTENCIA SECUNDARIA
+      PROCESAR ASISTENCIA CALIMAYA
     </button>
     <button *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
       DESCARGAR REPORTE FINAL
     </button>
   </div>
 
-  <!-- NUEVA SECCIÓN: GRID DE TARJETAS DE INCIDENCIAS (SUSTITUYE A LA TABLA HORIZONTAL) -->
-  <div class="grid-tarjetas-incidencias" *ngIf="resultadosTabla">
-    <div class="card-incidencia" 
-         *ngFor="let res of resultadosTabla | keyvalue" 
-         (click)="abrirModalEmpleado($any(res.value))">
-      
-      <div class="card-incidencia-header">
-        <span class="avatar-empleado">👤</span>
-        <div class="info-base">
-          <h3>{{ $any(res.value).nombre }}</h3>
-          <p class="id-sub">ID: {{ res.key }}</p>
-        </div>
-      </div>
-
-      <div class="card-incidencia-footer">
-        <span class="badge-click">Ver historial de incidencias →</span>
-      </div>
-    </div>
+  <div *ngIf="resultadosTabla" class="contenedor-resultados-premium">
+    <table id="tabla-cal-resultados" class="tabla-asistencia-reporte tabla-con-bordes">
+      <thead>
+        <tr>
+          <th rowspan="2" class="sticky-col">Personal Calimaya</th>
+          <th *ngFor="let dia of diasParaTabla" colspan="3" class="dia-header">
+            {{ dia | date:'dd/MM' }}
+          </th>
+        </tr>
+        <tr class="sub-headers-frl">
+          <ng-container *ngFor="let dia of diasParaTabla">
+            <th>F</th><th>R</th><th>L</th>
+          </ng-container>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let res of resultadosTabla | keyvalue; let i = index" [class.fila-cebra]="i % 2 === 0">
+          <td class="sticky-col name-cell">
+            <strong>{{ $any(res.value).nombre }}</strong><br>
+            <span class="id-tag" style="color: #666; font-size: 0.7rem;">ID: {{ res.key }}</span>
+          </td>
+          <ng-container *ngFor="let dia of diasParaTabla">
+            <td class="col-falta border-cell">{{ obtenerEstado(res.key, dia, 'F') }}</td>
+            <td class="col-retardo border-cell">{{ obtenerEstado(res.key, dia, 'R') }}</td>
+            <td class="col-limite border-cell">{{ obtenerEstado(res.key, dia, 'L') }}</td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
   </div>
-
-  <!-- NUEVA SECCIÓN: MODAL INTERNO PARA REVISIÓN VERTICAL DE INCIDENCIAS -->
-  <div class="modal-incidencia-overlay" *ngIf="empleadoSeleccionado" (click)="cerrarModalEmpleado()">
-    <div class="modal-incidencia-content" (click)="$event.stopPropagation()">
-      
-      <div class="modal-header">
-        <h2>Historial Detallado: {{ empleadoSeleccionado.nombre }}</h2>
-        <button class="btn-cerrar-modal" (click)="cerrarModalEmpleado()">×</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="tabla-modal-contenedor">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Asistencia (F)</th>
-                <th>Retardo (R)</th>
-                <th>Salida (L)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let dia of diasParaTabla">
-                <td style="font-weight: 600; color: #37474f;">{{ dia | date:'dd/MM/yyyy' }}</td>
-                <td class="col-f">{{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') }}</td>
-                <td class="col-r">{{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'R') }}</td>
-                <td class="col-l" [ngClass]="{'celda-salida-detectada': obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') !== ''}">
-                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 </div>

@@ -22,7 +22,7 @@ export class LoginComponent {
 
   async login() {
     if (!this.usuario || !this.password) {
-      this.notificaciones.mostrar('Ingrese usuario y contraseña', 'alerta');
+      this.notificaciones.mostrar('Ingrese usuario y contraseña', 'error');
       return;
     }
 

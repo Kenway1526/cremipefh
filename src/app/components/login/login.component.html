@@ -1,10 +1,10 @@
 <div class="login-container">
-  <h2 style="color: #1a237e; margin-bottom: 5px; font-weight: 800;">BIENVENIDO</h2>
-  <p style="color: #666; margin-bottom: 25px;">Plantel: <strong style="color: #1a237e;">{{ sedeSeleccionada | uppercase }}</strong></p>
+  <h2 class="login-title">BIENVENIDO</h2>
+  <p class="login-subtitle">Plantel: <strong class="sede-text">{{ sedeSeleccionada | uppercase }}</strong></p>
 
-  <div style="width: 100%;">
+  <div class="form-wrapper">
     <div class="input-group">
-      <label>Correo</label>
+      <label>Usuario / Correo</label>
       <input type="text" [(ngModel)]="usuario" placeholder="Ingrese su usuario" [disabled]="cargando" (keyup.enter)="login()">
     </div>
 
@@ -15,7 +15,7 @@
 
     <button class="btn-iniciar" (click)="login()" [disabled]="!usuario || !password || cargando">
       <span *ngIf="!cargando">Iniciar sesión</span>
-      <span *ngIf="cargando">
+      <span *ngIf="cargando" class="loading-state">
         <span class="spinner-mini"></span> Verificando...
       </span>
     </button>

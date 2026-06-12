@@ -1,66 +1,162 @@
 <div class="modulo-contenedor-principal">
   
   <div class="fila-cabecera">
-    <h2 class="titulo-principal">Checador Oficinas</h2>
-    <button (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul btn-gestion-personal">
-      <span class="icono-btn">{{ modoEdicion ? '✖️' : '⚙️' }}</span>
-      {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL OFI' }}
-    </button>
+    <div class="cabecera-titulo-box">
+      <h2 class="titulo-principal">Checador Oficinas</h2>
+    </div>
+    <div class="cabecera-boton-box">
+      <button (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul btn-gestion-personal">
+        <span class="icono-btn">{{ modoEdicion ? '✖️' : '⚙️' }}</span>
+        {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL OFI' }}
+      </button>
+    </div>
   </div>
 
   <div *ngIf="modoEdicion" class="panel-edicion-premium">
     <div class="edicion-header">
-      <h3 class="subtitulo-seccion">Configuración de Personal de Oficinas</h3>
-      <button (click)="agregarRegla()" class="btn-interfaz-verde">+ AGREGAR EMPLEADO</button>
+      <h3 class="subtitulo-seccion">Configuración de Personal de Toluca</h3>
+       <div class="acciones-config-container">
+        <button (click)="guardarCambiosMasivos()" class="btn-moderno btn-azul">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span>Guardar Cambios Masivos</span>
+        </button>
+        
+        <button (click)="agregarRegla()" class="btn-moderno btn-verde">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Agregar Empleado</span>
+        </button>
+      </div>
     </div>
     <div class="contenedor-tabla-scroll">
       <table class="tabla-config-personal">
         <thead>
           <tr>
-            <th>ID</th><th>Nombre Completo</th><th>Inicio Retardo</th><th>Límite Falta</th><th class="txt-center">Activo</th><th class="txt-center">Acciones</th>
+            <th>ID</th>
+            <th>Nombre Completo</th>
+            <th>Inicio Retardo</th>
+            <th>Límite Falta</th>
+            <th class="txt-center">Activo</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let r of reglas">
             <td><input [(ngModel)]="r.id_empleado" class="input-config"></td>
             <td><input [(ngModel)]="r.nombre_completo" class="input-config"></td>
-            <td><input [(ngModel)]="r.limite_retardo_inicio" type="time" class="input-config custom-picker"></td>
-            <td><input [(ngModel)]="r.limite_retardo_fin" type="time" class="input-config custom-picker"></td>
-            <td class="txt-center"><input type="checkbox" [(ngModel)]="r.activo" class="chk-config-gigante"></td>
-            <td class="txt-center">
-              <div class="acciones-flex">
-                <button (click)="actualizarRegla(r)" class="btn-accion-icono">💾</button>
-                <button (click)="eliminarRegla(r.id)" class="btn-accion-icono">🗑️</button>
+            <td>
+              <div class="input-falso-hora" (click)="abrirTimePicker(r, 'inicio')">
+                {{ r.limite_retardo_inicio }} 🕒
               </div>
             </td>
+            <td>
+              <div class="input-falso-hora" (click)="abrirTimePicker(r, 'fin')">
+                {{ r.limite_retardo_fin }} 🕒
+              </div>
+            </td>
+            <td class="txt-center"><input type="checkbox" [(ngModel)]="r.activo" class="chk-config-gigante"></td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="layout-expandido" style="justify-content: flex-start; gap: 25px;">
-    <div class="zona-archivo">
-      <input type="file" (change)="onFileChange($event)" id="archivo-ofi" style="display: none;">
-      <label for="archivo-ofi" class="btn-archivo-estilo">
-        <span class="icono-folder">📁</span>
-        <div class="texto-archivo">
-          <span class="nombre-archivo">{{ fileName || 'Sin archivo seleccionado' }}</span>
-          <span class="subtexto-archivo">(Seleccione el reporte binario .xls)</span>
+  <div class="modal-time-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
+    <div class="modal-time-content" (click)="$event.stopPropagation()">
+      <h3 class="time-title">Seleccionar Hora</h3>
+      
+      <div class="time-selectors">
+        <div class="time-column">
+          <label>Hora</label>
+          <select [(ngModel)]="horaSeleccionada" size="5">
+            <option *ngFor="let h of horasDisponibles" [value]="h">{{h}}</option>
+          </select>
+        </div>
+
+        <div class="time-separator">:</div>
+
+        <div class="time-column">
+          <label>Minutos</label>
+          <select [(ngModel)]="minutoSeleccionado" size="5">
+            <option *ngFor="let m of minutosDisponibles" [value]="m">{{m}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="time-footer">
+        <button class="btn-cancelar-time" (click)="showTimePicker = false">CANCELAR</button>
+        <button class="btn-confirmar-time" (click)="confirmarHora()">ACEPTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout-controles-asistencia">
+    
+    <div class="bloque-archivo">
+      <input type="file" (change)="onFileChange($event)" id="archivo-cal" style="display: none;">
+      <label for="archivo-cal" class="card-archivo-mini">
+        <div class="icon-box">📁</div>
+        <div class="info-archivo">
+          <span class="txt-principal">{{ fileName || 'Sin archivo seleccionado' }}</span>
         </div>
       </label>
     </div>
     
-    <div class="zona-fechas-separadas">
-      <div class="campo-fecha">
-        <label>Inicio Rango:</label>
-        <input type="date" [(ngModel)]="fechaInicioStr" class="input-picker custom-picker">
+    <div class="grupo-fechas-estetico">
+      <div class="input-fecha-personalizado" (click)="abrirCalendario('inicio')">
+        <label class="label-flotante">INICIO RANGO</label>
+        <div class="valor-fecha">
+          {{ fechaInicioStr | date:'dd/MM/yyyy' }}
+          <span class="cal-icon">📅</span>
+        </div>
       </div>
-      <div class="campo-fecha">
-        <label>Fin Rango:</label>
-        <input type="date" [(ngModel)]="fechaFinStr" class="input-picker custom-picker">
+
+      <div class="separador-fechas">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5c6bc0" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <div class="input-fecha-personalizado" (click)="abrirCalendario('fin')">
+        <label class="label-flotante">FIN RANGO</label>
+        <div class="valor-fecha">
+          {{ fechaFinStr | date:'dd/MM/yyyy' }}
+          <span class="cal-icon">📅</span>
+        </div>
       </div>
     </div>
+
+    <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
+      <div class="modal-calendario-content" (click)="$event.stopPropagation()">
+        
+        <div class="cal-header">
+          <button (click)="cambiarMes(-1)">◀</button>
+          <div class="cal-mes-anio">
+            {{ currentCalendarDate.format('MMMM YYYY') | uppercase }}
+          </div>
+          <button (click)="cambiarMes(1)">▶</button>
+        </div>
+
+        <div class="cal-grid">
+          <div class="cal-day-name" *ngFor="let s of semanas">{{s}}</div>
+          <div class="cal-day-num" 
+              *ngFor="let dia of diasCalendario" 
+              [class.dia-vacio]="!dia"
+              (click)="seleccionarFecha(dia)">
+            {{ dia }}
+          </div>
+        </div>
+
+        <button class="btn-cerrar-cal" (click)="showCalendar = false">CANCELAR</button>
+      </div>
+    </div>
+
   </div>
 
   <div class="seccion-acciones-master">
@@ -72,34 +168,59 @@
     </button>
   </div>
 
-  <div *ngIf="resultadosTabla" class="contenedor-resultados-premium">
-    <table id="tabla-ofi-resultados" class="tabla-asistencia-reporte tabla-con-bordes">
-      <thead>
-        <tr>
-          <th rowspan="2" class="sticky-col">Personal Oficinas</th>
-          <th *ngFor="let dia of diasParaTabla" colspan="3" class="dia-header">
-            {{ dia | date:'dd/MM' }}
-          </th>
-        </tr>
-        <tr class="sub-headers-frl">
-          <ng-container *ngFor="let dia of diasParaTabla">
-            <th>F</th><th>R</th><th>L</th>
-          </ng-container>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let res of resultadosTabla | keyvalue; let i = index" [class.fila-cebra]="i % 2 === 0">
-          <td class="sticky-col name-cell">
-            <strong>{{ $any(res.value).nombre }}</strong><br>
-            <span class="id-tag" style="color: #666; font-size: 0.7rem;">ID: {{ res.key }}</span>
-          </td>
-          <ng-container *ngFor="let dia of diasParaTabla">
-            <td class="col-falta border-cell">{{ obtenerEstado(res.key, dia, 'F') }}</td>
-            <td class="col-retardo border-cell">{{ obtenerEstado(res.key, dia, 'R') }}</td>
-            <td class="col-limite border-cell">{{ obtenerEstado(res.key, dia, 'L') }}</td>
-          </ng-container>
-        </tr>
-      </tbody>
-    </table>
+  <div class="grid-tarjetas-incidencias" *ngIf="resultadosTabla">
+    <div class="card-incidencia" 
+         *ngFor="let res of resultadosTabla | keyvalue" 
+         (click)="abrirModalEmpleado($any(res.value))">
+      
+      <div class="card-incidencia-header">
+        <span class="avatar-empleado">👤</span>
+        <div class="info-base">
+          <h3>{{ $any(res.value).nombre }}</h3>
+          <p class="id-sub">ID: {{ res.key }}</p>
+        </div>
+      </div>
+
+      <div class="card-incidencia-footer">
+        <span class="badge-click">Ver historial de incidencias →</span>
+      </div>
+    </div>
   </div>
+
+  <div class="modal-incidencia-overlay" *ngIf="empleadoSeleccionado" (click)="cerrarModalEmpleado()">
+    <div class="modal-incidencia-content" (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <h2>Historial Detallado: {{ empleadoSeleccionado.nombre }}</h2>
+        <button class="btn-cerrar-modal" (click)="cerrarModalEmpleado()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="tabla-modal-contenedor">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Asistencia (F)</th>
+                <th>Retardo (R)</th>
+                <th>Salida Auditoría (L)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let dia of diasParaTabla">
+                <td style="font-weight: 600; color: #37474f;">{{ dia | date:'dd/MM/yyyy' }}</td>
+                <td class="col-f">{{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') }}</td>
+                <td class="col-r">{{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'R') }}</td>
+                <td class="col-l" [ngClass]="{'celda-salida-detectada': obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') !== ''}">
+                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>

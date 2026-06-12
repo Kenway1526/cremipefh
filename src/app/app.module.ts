@@ -7,6 +7,9 @@ import { CommonModule } from '@angular/common'; // Necesario para ngClass y ngIf
 import { AppComponent } from './app.component';
 import { AsistenciaTolucaSecComponent } from './components/toluca/asistencia-toluca-sec/asistencia-toluca-sec.component';
 import { AsistenciaTolucaOfiComponent } from './components/toluca/asistencia-toluca-ofi/asistencia-toluca-ofi.component'; //
+import { AsistenciaCalComponent } from './components/calimaya/asistencia-cal/asistencia-cal.component';
+import { AsistenciaAeroEsqComponent } from './components/aeropuerto/asistencia-aero-esq/asistencia-aero-esq.component';
+import { AsistenciaAeroHacComponent } from './components/aeropuerto/asistencia-aero-hac/asistencia-aero-hac.component';
 import { LoginComponent } from './components/login/login.component';
 import { AppRoutingModule } from './app-routing.module'; // <--- 1. ASEGÚRATE QUE ESTÉ IMPORTADO
 import { ReglasService } from './services/reglas.service';
@@ -17,6 +20,9 @@ import { LucideAngularModule, Settings, X, Plus, Save, Trash2, Upload, FileSprea
     AppComponent,
     AsistenciaTolucaSecComponent,
     AsistenciaTolucaOfiComponent,
+    AsistenciaCalComponent,
+    AsistenciaAeroEsqComponent,
+    AsistenciaAeroHacComponent,
     LoginComponent
   ],
   imports: [
