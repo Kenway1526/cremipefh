@@ -171,7 +171,7 @@
 }
 
 .modal-incidencia-content {
-    background: white; border-radius: 24px; width: 90%; max-width: 750px;
+    background: white; border-radius: 24px; width: 90%; max-width: 850px; /* Ampliado ligeramente para acoger la 4ta columna */
     max-height: 85vh; display: flex; flex-direction: column;
     box-shadow: 0 24px 60px rgba(0,0,0,0.25); animation: modalSlideUp 0.3s ease-out;
 }
@@ -195,6 +195,7 @@
 .col-f { color: #d32f2f; font-weight: 800; }
 .col-r { color: #f57c00; font-weight: 800; }
 .col-l { color: #1a237e; font-weight: 800; }
+.col-ok { color: #2e7d32; font-weight: 800; } /* 🔥 Estilo para marcaje correcto en Franja 4 */
 
 /* Resaltado específico para auditoría de checadas en la salida */
 .celda-salida-detectada {
@@ -215,7 +216,7 @@
     background: #ffffff; padding: 25px; border-radius: 25px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1);
 }
-.modal-calendario-content { width: 350px; }
+/* 🔥 SE REMOVIÓ EL ANCHO DEL CONTENEDOR DE AQUÍ YA QUE AHORA ES GOBERNADO EXCLUSIVAMENTE POR LA DIRECTRIZ FIJA DEL ARCHIVO HTML */
 .modal-time-content { width: 300px; text-align: center; }
 
 .cal-header {
@@ -230,9 +231,25 @@
 }
 .cal-header button:hover { transform: scale(1.1); background: #1e88e5; }
 
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+.cal-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 8px; 
+    text-align: center; 
+    height: 240px; /* 🔥 Forzamos el alto fijo para que no se mueva con 4 o 6 filas */
+    align-content: start;
+}
 .cal-day-name { font-weight: 800; color: #5c6bc0; font-size: 0.7rem; padding-bottom: 10px; }
-.cal-day-num { height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; font-weight: 600; }
+.cal-day-num { 
+    height: 32px; /* 💡 Reducimos ligeramente para que queden perfectos en los 240px fijos */
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    box-sizing: border-box;
+}
 .cal-day-num:hover:not(.dia-vacio) { background: #e8eaf6; color: #1a237e; }
 
 .time-selectors { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 25px; }

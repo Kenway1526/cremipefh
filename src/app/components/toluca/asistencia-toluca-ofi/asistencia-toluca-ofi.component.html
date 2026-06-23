@@ -133,7 +133,7 @@
     </div>
 
     <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
-      <div class="modal-calendario-content" (click)="$event.stopPropagation()">
+      <div class="modal-calendario-content" style="width: 320px;" (click)="$event.stopPropagation()">
         
         <div class="cal-header">
           <button (click)="cambiarMes(-1)">◀</button>
@@ -203,8 +203,8 @@
                 <th>Fecha</th>
                 <th>Asistencia (F)</th>
                 <th>Retardo (R)</th>
-                <th>Salida Auditoría (L)</th>
-              </tr>
+                <th>Paracaidismo (L)</th>
+                <th>Salida Correcta (OK)</th> </tr>
             </thead>
             <tbody>
               <tr *ngFor="let dia of diasParaTabla">
@@ -213,6 +213,9 @@
                 <td class="col-r">{{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'R') }}</td>
                 <td class="col-l" [ngClass]="{'celda-salida-detectada': obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') !== ''}">
                   {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') }}
+                </td>
+                <td class="col-ok" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') === 'SS' ? '#d32f2f' : '#2e7d32'">
+                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') }}
                 </td>
               </tr>
             </tbody>

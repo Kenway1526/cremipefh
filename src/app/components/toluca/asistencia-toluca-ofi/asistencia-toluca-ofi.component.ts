@@ -8,10 +8,10 @@ interface ResultadoEmpleado {
   nombre: string;
   asistencias: { [key: string]: string };
   retardos: { [key: string]: string };
-  limites: { [key: string]: string };
-  faltasEspeciales: { [key: string]: 'ANTES_DE_HORA' | 'ENTRE_ENTRADA_SALIDA' | 'SALIDA_O_DESPUES' };
-  reglaInicio: string;
-  reglaFin: string;
+  paracaidismo: { [key: string]: string }; // 🔥 Reemplaza 'limites' para Franja 3 (Paracaidismo)
+  faltasEspeciales: { [key: string]: 'ANTES_DE_HORA' | 'RETARDO' | 'PARACAIDISTA' | 'SALIDA_O_DESPUES' }; // 🔥 Tipos actualizados
+  reglaInicio: string; // Representa tu variable 'entrada' de la BD
+  reglaFin: string;    // Representa tu variable 'salida' de la BD
 }
 
 @Component({
@@ -53,13 +53,11 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
   }
 
   // --- MÓDULO 1: RECEPTOR DEL ENDPOINT DE NETLIFY ---
-  // Almacena la respuesta del JSON generado por tu función Lambda en 'dataExcelMemoria'
   asignarDatosNetlify(resultadosJson: any[]) {
     this.dataExcelMemoria = resultadosJson;
     this.notificaciones.mostrar(`Servidor: ${this.dataExcelMemoria.length} marcajes cargados`, 'exito');
   }
 
-  // En caso de que también uses lectura local en este componente, procesamos el archivo base64
   onFileChange(event: any) {
     const file = event.target.files[0];
     if (!file) return;
@@ -71,37 +69,62 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
         const sheet = workbook.Sheets["Reporte de Asistencia"]; 
         const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
         
-        // Mapeo interno clonando la lógica exacta de tu handler de Netlify
+        const filaDiasEncabezado = rawData[3]; // Fila 4 con los días reales
         const resultados: any[] = [];
-        let empleadoActual = null;
+        
+        // 💡 Definimos explícitamente la estructura que puede tomar el empleado actual
+        let empleadoActual: { id_excel: string; nombre_excel: string; filaIdx: number } | null = null;
 
         for (let i = 0; i < rawData.length; i++) {
           const fila = rawData[i];
-          if (fila[0] && fila[0].toString().trim().toUpperCase() === "ID:") {
-            empleadoActual = {
-              id_excel: fila[4]?.toString().trim(), 
-              nombre_excel: fila[10]?.toString().trim(), 
-              filaIdx: i
-            };
+          
+          const tieneIdToken = fila.some((celda: any) => celda && celda.toString().trim().toUpperCase() === "ID:");
+
+          if (tieneIdToken) {
+            const idExtraido = fila[4]?.toString().trim();
+            const nombreExtraido = fila[10]?.toString().trim();
+
+            if (idExtraido) {
+              empleadoActual = {
+                id_excel: idExtraido, 
+                nombre_excel: nombreExtraido || 'SIN NOMBRE', 
+                filaIdx: i
+              };
+            }
             continue;
           }
+
           if (empleadoActual && i === empleadoActual.filaIdx + 1) {
-            for (let col = 0; col <= 20; col++) {
-              const celda = fila[col]?.toString().trim();
-              if (celda && celda.includes(':')) {
-                resultados.push({
-                  id_empleado: empleadoActual.id_excel,
-                  nombre: empleadoActual.nombre_excel,
-                  dia: 7 + col, 
-                  entrada: celda.substring(0, 5) 
-                });
+            for (let col = 0; col <= 30; col++) {
+              const celdaRaw = fila[col]?.toString().trim();
+              
+              if (celdaRaw && celdaRaw.includes(':')) {
+                const diaReal = filaDiasEncabezado[col]?.toString().trim();
+
+                if (diaReal) {
+                  // 💡 Seteamos tipo string explícito a los parámetros 'h' de los métodos funcionales
+                  const marcajesExtraidos = celdaRaw
+                    .split(/[\n\r\s]+/)
+                    .map((h: string) => h.trim())
+                    .filter((h: string) => h.includes(':'));
+
+                  // 💡 Seteamos tipo string explícito a 'horaLimpia'
+                  marcajesExtraidos.forEach((horaLimpia: string) => {
+                    resultados.push({
+                      id_empleado: empleadoActual!.id_excel, // Usamos ! porque ya validamos que existe arriba
+                      nombre: empleadoActual!.nombre_excel,
+                      dia: Number(diaReal), 
+                      entrada: horaLimpia.substring(0, 5)
+                    });
+                  });
+                }
               }
             }
             empleadoActual = null;
           }
         }
         this.dataExcelMemoria = resultados;
-        this.notificaciones.mostrar(`Excel Local: ${this.dataExcelMemoria.length} marcajes listos`, 'exito');
+        this.notificaciones.mostrar(`Excel Procesado: ${this.dataExcelMemoria.length} marcas en memoria.`, 'exito');
       } catch (err) {
         this.notificaciones.mostrar('Error al leer Excel', 'error');
       }
@@ -109,15 +132,17 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
     reader.readAsBinaryString(file);
   }
 
-  // --- MÓDULO 2: ANALIZADOR ANALÍTICO CON INTERFAZ ADAPTADA ---
   generarProcesamiento() {
-    if (this.dataExcelMemoria.length === 0) return;
+    if (!this.dataExcelMemoria || this.dataExcelMemoria.length === 0) {
+      this.notificaciones.mostrar('No hay marcajes cargados en memoria', 'alerta');
+      return;
+    }
 
     const mInicio = moment(this.fechaInicioStr).startOf('day');
     const mFin = moment(this.fechaFinStr).endOf('day');
     this.diasParaTabla = [];
     
-    // Generamos el rango de días del periodo excluyendo fines de semana
+    // 1. Rango de días laborales
     let aux = mInicio.clone();
     while (aux.isSameOrBefore(mFin)) {
       if (aux.day() !== 0 && aux.day() !== 6) {
@@ -128,81 +153,111 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
 
     const mapaCompleto: { [key: string]: ResultadoEmpleado } = {};
 
-    // Inicializamos el mapa con los empleados activos de tu base de datos de Oficinas
+    // 2. Inicializar empleados activos
     this.reglas.filter(r => r.activo).forEach(r => {
       const idKey = String(r.id_empleado).trim();
       mapaCompleto[idKey] = {
         nombre: r.nombre_completo,
         asistencias: {}, 
         retardos: {}, 
-        limites: {},
+        paracaidismo: {}, 
         faltasEspeciales: {}, 
-        reglaInicio: r.limite_retardo_inicio.substring(0, 5), // "08:00"
-        reglaFin: r.limite_retardo_fin.substring(0, 5)       // "08:15"
+        reglaInicio: r.limite_retardo_inicio.substring(0, 5), 
+        reglaFin: r.limite_retardo_fin.substring(0, 5) 
       };
     });
 
-    // CONSTANTE HORA DE SALIDA OFICINAS
-    const HORA_SALIDA_OFI = "16:00"; 
-    const mBase = moment(this.fechaInicioStr);
+    const toMins = (hStr: string) => {
+      if (!hStr || !hStr.includes(':')) return 0;
+      const [h, m] = hStr.split(':').map(Number);
+      return (h * 60) + m;
+    };
 
-    // PROCESO DE CRUCE DE DATOS ADAPTADO AL PARSER DE TU MOTOR
+    const mesInicioRango = mInicio.month(); 
+    const mesFinRango = mFin.month();       
+    const diaCorteInicio = mInicio.date();  
+
+    // 3. PROCESO DE CRUCE DE DATOS ABIERTO (ENTRADAS Y SALIDAS)
     this.dataExcelMemoria.forEach(reg => {
       const idExcel = String(reg.id_empleado).trim();
       const emp = mapaCompleto[idExcel];
 
       if (emp) {
-        // Reconstruimos la fecha en base al número de día que arrojó tu Netlify (reg.dia)
-        const fechaConstruidaStr = mBase.clone().date(reg.dia).format('YYYY-MM-DD');
-        const hMarcaje = reg.entrada; // Tu motor lo nombra "entrada" ("08:05")
+        const diaDelExcel = Number(reg.dia);
+        const hMarcaje = reg.entrada; 
 
-        // Verificamos si la fecha construida cae dentro del rango seleccionado por el usuario
+        let mesCalculado = (diaDelExcel >= diaCorteInicio) ? mesInicioRango : mesFinRango;
+
+        const fechaConstruidaStr = moment(this.fechaInicioStr)
+          .month(mesCalculado)
+          .date(diaDelExcel)
+          .format('YYYY-MM-DD');
+
         if (this.diasParaTabla.includes(fechaConstruidaStr)) {
+          
+          const minMarcaje = toMins(hMarcaje);
+          const minEntradaBase = toMins(emp.reglaInicio);
+          const minToleranciaFin = minEntradaBase + 30; 
+          const minSalidaJornada = toMins(emp.reglaFin); // 💡 Uso de la regla de salida Supabase
+
+          // 🔄 CASO A: Es el primer marcaje del día (Procesamos la Entrada)
           if (!emp.asistencias[fechaConstruidaStr]) {
             emp.asistencias[fechaConstruidaStr] = hMarcaje;
-            
-            // ESCENARIO A: Checó antes de la hora oficial de entrada
-            if (hMarcaje < emp.reglaInicio) {
+
+            if (minMarcaje < minEntradaBase) {
               emp.faltasEspeciales[fechaConstruidaStr] = 'ANTES_DE_HORA';
             }
-            // ESCENARIO B: Checó entre la Entrada y la Salida de Oficinas
-            else if (hMarcaje >= emp.reglaInicio && hMarcaje < HORA_SALIDA_OFI) {
-              emp.faltasEspeciales[fechaConstruidaStr] = 'ENTRE_ENTRADA_SALIDA';
-              
-              if (hMarcaje <= emp.reglaFin) {
-                emp.retardos[fechaConstruidaStr] = hMarcaje; // Columna R
-              } else {
-                emp.limites[fechaConstruidaStr] = hMarcaje;  // Columna L
-              }
+            else if (minMarcaje >= minEntradaBase && minMarcaje <= minToleranciaFin) {
+              emp.faltasEspeciales[fechaConstruidaStr] = 'RETARDO';
+              emp.retardos[fechaConstruidaStr] = hMarcaje; 
             }
-            // ESCENARIO C: Checó directo a la hora de salida o después
-            else if (hMarcaje >= HORA_SALIDA_OFI) {
+            else if (minMarcaje > minToleranciaFin && minMarcaje <= minSalidaJornada) {
+              emp.faltasEspeciales[fechaConstruidaStr] = 'PARACAIDISTA';
+              emp.paracaidismo[fechaConstruidaStr] = hMarcaje; 
+            }
+            else if (minMarcaje > minSalidaJornada) {
               emp.faltasEspeciales[fechaConstruidaStr] = 'SALIDA_O_DESPUES';
-              emp.limites[fechaConstruidaStr] = hMarcaje; // Columna L para auditar fraude/omisión
+            }
+          } 
+          // 🔄 CASO B: Es un segundo marcaje en el mismo día (Evaluamos si es la Salida legítima)
+          else {
+            if (minMarcaje >= minSalidaJornada) {
+              // Si la checada inicial fue catalogada como FALTA (porque checó tarde), pero ahora vemos que sí marcó salida,
+              // o si llegó a tiempo, seteamos un estado base aceptado por tu TypeScript
+              emp.faltasEspeciales[fechaConstruidaStr] = 'ANTES_DE_HORA'; 
+              
+              // Guardamos la checada en un campo que no interfiera para asegurar el registro en auditorías si es necesario
+              emp.asistencias[fechaConstruidaStr] = hMarcaje; // Actualiza con el último marcaje (el más reciente de salida)
             }
           }
+
         }
       }
     });
 
-    // FILTRO ANALÍTICO: Eliminar renglones redundantes con asistencia perfecta (todos NA)
+    // 4. Filtro de visualización analítica
     const mapaFiltrado: { [key: string]: ResultadoEmpleado } = {};
-
     Object.keys(mapaCompleto).forEach(idEmpleado => {
       const emp = mapaCompleto[idEmpleado];
       let tieneIncidencia = false;
 
       for (const dia of this.diasParaTabla) {
-        // Si un día laboral no tiene marcajes -> Falta absoluta (F), requiere atención
         if (!emp.asistencias[dia]) {
           tieneIncidencia = true;
           break;
         }
 
         const condicion = emp.faltasEspeciales[dia];
-        // Si el empleado llegó tarde o solo vino a la salida -> Requiere atención
-        if (condicion === 'ENTRE_ENTRADA_SALIDA' || condicion === 'SALIDA_O_DESPUES') {
+        // El estatus 'CERRADO_CON_SALIDA' y 'ANTES_DE_HORA' (si tiene salida en otro lado) no deberían causar ruido si todo está bien,
+        // pero si el empleado tiene retardos o paracaidismo, se muestra la fila por la incidencia matutina.
+        if (condicion === 'RETARDO' || condicion === 'PARACAIDISTA' || condicion === 'SALIDA_O_DESPUES') {
           tieneIncidencia = true;
+          break;
+        }
+        
+        // Si el empleado llegó a tiempo pero dejó la salida abierta (sigue en ANTES_DE_HORA en lugar de CERRADO_CON_SALIDA)
+        if (condicion === 'ANTES_DE_HORA') {
+          tieneIncidencia = true; // Forzamos mostrar para ver el SS rojo
           break;
         }
       }
@@ -213,31 +268,50 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
     });
 
     this.resultadosTabla = mapaFiltrado;
-    
-    const totalOcultados = Object.keys(mapaCompleto).length - Object.keys(mapaFiltrado).length;
-    this.notificaciones.mostrar(
-      `Análisis completado.`, 
-      'exito'
-    );
+    this.notificaciones.mostrar('Análisis finalizado con éxito', 'exito');
   }
 
-  // Compatibilidad con firmas antiguas o herencia de clases
   obtenerEstado(id: any, dia: string, tipo: 'F' | 'R' | 'L'): string {
     const idStr = String(id).trim();
     if (!this.resultadosTabla || !this.resultadosTabla[idStr]) return '';
     return this.obtenerEstadoDirecto(this.resultadosTabla[idStr], dia, tipo);
   }
 
-  // Extractor de estados analíticos unificado para Tarjetas y el Modal de visualización vertical
-  obtenerEstadoDirecto(d: ResultadoEmpleado, dia: string, tipo: 'F' | 'R' | 'L'): string {
+  // Extractor unificado ajustado al render de las 4 franjas (HTML, Tarjetas y Modales)
+  obtenerEstadoDirecto(d: ResultadoEmpleado, dia: string, tipo: 'F' | 'R' | 'L' | 'S'): string {
+    const condicion = d.faltasEspeciales[dia];
+
+    // --- COLUMNA 1: ASISTENCIA (F) ---
     if (tipo === 'F') {
-      if (!d.asistencias[dia]) return 'F'; 
-      const condicion = d.faltasEspeciales[dia];
-      if (condicion === 'ANTES_DE_HORA') return 'NA';
-      return ''; 
+      if (!d.asistencias[dia]) return 'F'; // Si no checó nada en el día: Falta (F)
+      if (condicion === 'SALIDA_O_DESPUES') return 'F'; // Si solo checó salida, no cuenta entrada: Falta (F)
+      if (condicion === 'ANTES_DE_HORA') return 'OK'; // Llegó a tiempo: OK
+      return ''; // Para retardos o paracaidistas se queda en blanco la columna F
     }
-    if (tipo === 'R') return d.retardos[dia] || '';
-    if (tipo === 'L') return d.limites[dia] || '';
+
+    // --- COLUMNA 2: RETARDO (R) ---
+    if (tipo === 'R') {
+      return d.retardos[dia] || ''; // Hora exacta si está en rango, sino en blanco
+    }
+
+    // --- COLUMNA 3: PARACAIDISMO (L) ---
+    if (tipo === 'L') {
+      return d.paracaidismo[dia] || ''; // Hora exacta si es paracaidista, sino en blanco
+    }
+
+    // --- COLUMNA 4: SALIDA (S) ---
+    // --- COLUMNA 4: SALIDA (S) ---
+    if (tipo === 'S') {
+      if (!d.asistencias[dia]) return ''; 
+      
+      // Si el estado final se quedó en ANTES_DE_HORA tras registrarse la salida legítima, la celda de SS se limpia automáticamente
+      if (condicion === 'ANTES_DE_HORA') return '';
+      if (condicion === 'SALIDA_O_DESPUES') return ''; 
+      
+      // Si se quedó con Retardo o Paracaidista y nunca entró al CASO B para actualizar el objeto, lanza SS
+      return 'SS'; 
+    }
+
     return '';
   }
 
@@ -249,7 +323,6 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
     this.empleadoSeleccionado = null;
   }
 
-  // Genera la descarga estructurada en memoria sin depender de tablas del DOM horizontal
   exportarExcelResultados() {
     if (!this.resultadosTabla || Object.keys(this.resultadosTabla).length === 0) {
       this.notificaciones.mostrar('No hay datos procesados para exportar', 'alerta');
@@ -268,7 +341,7 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
           'Fecha': dia,
           'Falta (F)': this.obtenerEstadoDirecto(emp, dia, 'F'),
           'Retardo (R)': this.obtenerEstadoDirecto(emp, dia, 'R'),
-          'Salida Auditoría (L)': this.obtenerEstadoDirecto(emp, dia, 'L')
+          'Paracaidismo (L)': this.obtenerEstadoDirecto(emp, dia, 'L') // 🔥 Nombre adaptado en el reporte excel
         });
       });
     });
