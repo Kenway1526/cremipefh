@@ -1,0 +1,533 @@
+<div class="odoo-layout-wrapper">
+  
+  <!-- BARRA DE CONTROL SUPERIOR -->
+  <header class="odoo-control-panel">
+    <div class="control-panel-left">
+      <div class="breadcrumb-container">
+        <button type="button" class="btn-breadcrumb-hub" (click)="regresarAlHub()">Hub</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Directorio: {{ plantelActual | uppercase }}</span>
+      </div>
+      <div class="acciones-primarias">
+        <button type="button" class="btn-odoo btn-odoo-primary" (click)="abrirFormularioNuevo()">
+          + NUEVO
+        </button>
+      </div>
+    </div>
+
+    <div class="control-panel-center">
+      <div class="odoo-searchbox">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          [(ngModel)]="terminoBusqueda" 
+          placeholder="Buscar por nombre, departamento o puesto..."
+          class="input-search-odoo">
+      </div>
+    </div>
+
+    <div class="control-panel-right">
+      <div class="odoo-view-switchers">
+        <button type="button" class="btn-switcher" [class.active]="vistaActiva === 'kanban'" (click)="vistaActiva = 'kanban'" title="Kanban">🗂️</button>
+        <button type="button" class="btn-switcher" [class.active]="vistaActiva === 'lista'" (click)="vistaActiva = 'lista'" title="Lista">📑</button>
+        <button type="button" class="btn-switcher" [class.active]="vistaActiva === 'organigrama'" (click)="vistaActiva = 'organigrama'" title="Organigrama">🌳</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- LIENZO PRINCIPAL -->
+  <main class="odoo-content-area">
+
+    <!-- 1. KANBAN -->
+    <div *ngIf="vistaActiva === 'kanban'" class="kanban-grid">
+      <div class="kanban-card" *ngFor="let emp of empleadosFiltrados" (click)="editarEmpleado(emp)">
+        <div class="kanban-card-left">
+          <div class="kanban-avatar">
+            <img *ngIf="emp.foto_drive_url" [src]="emp.foto_drive_url" alt="Foto">
+            <span *ngIf="!emp.foto_drive_url" class="avatar-placeholder">👤</span>
+          </div>
+          <div class="kanban-status-dot" [class.activo]="emp.estatus === 'activo'"></div>
+        </div>
+        <div class="kanban-card-body">
+          <h3 class="kanban-emp-name">{{ emp.nombre_completo }}</h3>
+          <span class="kanban-emp-job">{{ emp.puesto_titulo || emp.puesto || 'Sin Puesto Asignado' }}</span>
+          <div class="kanban-meta-info">
+            <div class="meta-row" *ngIf="emp.correo_laboral"><span class="meta-ico">✉️</span><span class="meta-txt">{{ emp.correo_laboral }}</span></div>
+            <div class="meta-row" *ngIf="emp.celular"><span class="meta-ico">📱</span><span class="meta-txt">{{ emp.celular }}</span></div>
+          </div>
+          <div class="kanban-tags">
+            <span class="badge-tag tag-dept">{{ emp.departamento || 'General' }}</span>
+            <span class="badge-tag tag-plantel">{{ emp.plantel_alta | uppercase }}</span>
+            <span *ngIf="emp.interplanteles" class="badge-tag tag-inter">Interplantel</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. LISTA -->
+    <div *ngIf="vistaActiva === 'lista'" class="odoo-list-container">
+      <table class="odoo-table">
+        <thead>
+          <tr>
+            <th>Nombre del Empleado</th>
+            <th>Puesto de Trabajo</th>
+            <th>Departamento</th>
+            <th>Celular</th>
+            <th>Correo Laboral</th>
+            <th>Estatus</th>
+            <th>Expediente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let emp of empleadosFiltrados" (click)="editarEmpleado(emp)">
+            <td class="td-nombre font-bold">
+              <span class="dot-inline" [class.dot-green]="emp.estatus === 'activo'"></span>
+              {{ emp.nombre_completo }}
+            </td>
+            <td>{{ emp.puesto_titulo || emp.puesto || '-' }}</td>
+            <td>{{ emp.departamento || '-' }}</td>
+            <td>{{ emp.celular || '-' }}</td>
+            <td>{{ emp.correo_laboral || '-' }}</td>
+            <td><span class="badge-status" [ngClass]="emp.estatus">{{ emp.estatus | uppercase }}</span></td>
+            <td>
+              <a *ngIf="emp.expediente_digital_url" [href]="emp.expediente_digital_url" target="_blank" (click)="$event.stopPropagation()" class="link-drive-expediente">
+                📁 Abrir Drive
+              </a>
+              <span *ngIf="!emp.expediente_digital_url" class="txt-muted">Sin enlace</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. ORGANIGRAMA -->
+    <div *ngIf="vistaActiva === 'organigrama'" class="tree-placeholder-box">
+      <h3>Estructura Organizacional</h3>
+      <div *ngFor="let jefe of getJefes()" class="tree-jefe-card">
+        <div class="jefe-info font-bold">👑 {{ jefe.nombre_completo }} ({{ jefe.puesto_titulo || 'Dirección / Jefatura' }})</div>
+        <div class="subordinados-box">
+          <div *ngFor="let sub of getSubordinados(jefe.id)" class="subordinado-tag">
+            ↳ 👤 {{ sub.nombre_completo }} - <em>{{ sub.puesto_titulo || sub.puesto }}</em>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: EXPEDIENTE ESTILO ODOO -->
+  <div class="odoo-modal-backdrop" *ngIf="modoFormulario" (click)="cerrarFormulario()">
+    <div class="odoo-sheet-window" (click)="$event.stopPropagation()">
+      
+      <div class="sheet-toolbar">
+        <div class="toolbar-left">
+          <button type="button" class="btn-odoo btn-odoo-primary" (click)="guardarEmpleado()">GUARDAR</button>
+          <button type="button" class="btn-odoo btn-odoo-secondary" (click)="cerrarFormulario()">DESCARTAR</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="odoo-status-pills">
+            <span [class.selected]="empleadoForm.estatus === 'activo'" (click)="empleadoForm.estatus = 'activo'">ACTIVO</span>
+            <span [class.selected]="empleadoForm.estatus === 'incapacidad'" (click)="empleadoForm.estatus = 'incapacidad'">INCAPACIDAD</span>
+            <span [class.selected]="empleadoForm.estatus === 'baja'" (click)="empleadoForm.estatus = 'baja'">BAJA</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-paper">
+        
+        <!-- ENCABEZADO -->
+        <div class="sheet-header-grid">
+          <div class="header-main-inputs">
+            <label class="label-muted">Nombre</label>
+            <input 
+              type="text" 
+              [(ngModel)]="empleadoForm.nombre_completo" 
+              pattern="[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+"
+              class="input-huge-title font-bold">
+            
+            <label class="label-muted mt-2">Puesto de Trabajo</label>
+            <input 
+              type="text" 
+              [(ngModel)]="empleadoForm.puesto_titulo" 
+              pattern="[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+"
+              placeholder="Ej. Docente de Matemáticas" 
+              class="input-job-title">
+          </div>
+
+          <div class="header-avatar-box">
+            <div class="avatar-preview">
+              <img *ngIf="empleadoForm.foto_drive_url" [src]="empleadoForm.foto_drive_url" alt="Foto">
+              <span *ngIf="!empleadoForm.foto_drive_url" class="avatar-default">👤</span>
+            </div>
+            <input 
+              type="text" 
+              [(ngModel)]="empleadoForm.foto_drive_url" 
+              placeholder="URL Foto Drive..." 
+              class="input-odoo-field mt-1" style="font-size: 0.72rem;">
+          </div>
+        </div>
+
+        <!-- FILA DE CONTACTO Y PLANTEL -->
+        <div class="odoo-form-row four-cols mt-3">
+          <div class="form-group">
+            <label>Correo Laboral</label>
+            <input type="email" [(ngModel)]="empleadoForm.correo_laboral" pattern="^[a-zA-Z.]+@ipefh\.edu\.mx$" class="input-odoo-field">
+          </div>
+          <div class="form-group">
+            <label>Celular (10 dígitos)</label>
+            <input type="tel" [(ngModel)]="empleadoForm.celular" maxlength="10" class="input-odoo-field">
+          </div>
+          <div class="form-group">
+            <label>Plantel de Alta</label>
+            <select [(ngModel)]="empleadoForm.plantel_alta" class="input-odoo-field font-bold">
+              <option value="toluca">Toluca</option>
+              <option value="aeropuerto">Aeropuerto</option>
+              <option value="calimaya">Calimaya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Interplanteles</label>
+            <div class="checkbox-container">
+              <input type="checkbox" [(ngModel)]="empleadoForm.interplanteles" id="chkInter">
+              <label for="chkInter">Labora en múltiples sedes</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- FECHAS CON SELECTOR RÁPIDO -->
+        <div class="odoo-form-row three-cols mt-2">
+          <div class="form-group">
+            <label>Fecha de Ingreso</label>
+            <div class="input-falso-selector" (click)="abrirCalendario('ingreso')">
+              {{ empleadoForm.fecha_ingreso || 'Seleccionar...' }} 📅
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Alta en Nómina</label>
+            <div class="input-falso-selector" (click)="abrirCalendario('alta')">
+              {{ empleadoForm.alta_nomina || 'Seleccionar...' }} 📅
+            </div>
+          </div>
+          <div class="form-group">
+            <label>URL Expediente Drive</label>
+            <input type="text" [(ngModel)]="empleadoForm.expediente_digital_url" placeholder="https://drive.google.com/..." class="input-odoo-field">
+          </div>
+        </div>
+
+        <!-- PESTAÑAS (NOTEBOOK) -->
+        <div class="odoo-notebook-container mt-4">
+          <div class="notebook-tabs-bar">
+            <button type="button" class="tab-btn" [class.active]="tabActiva === 'trabajo'" (click)="tabActiva = 'trabajo'">Información del Trabajo</button>
+            <button type="button" class="tab-btn" [class.active]="tabActiva === 'personal'" (click)="tabActiva = 'personal'">Información Privada & Personal</button>
+            <button type="button" class="tab-btn" [class.active]="tabActiva === 'nomina'" (click)="tabActiva = 'nomina'">Nómina & Modalidad</button>
+          </div>
+
+          <div class="notebook-content-body">
+            
+            <!-- PESTAÑA: TRABAJO -->
+            <div *ngIf="tabActiva === 'trabajo'" class="tab-pane">
+              <div class="odoo-form-columns">
+                <div class="col-half">
+                  <h4 class="section-title">Ubicación y Dependencia</h4>
+                  <div class="form-group">
+                    <label>Departamento / Área</label>
+                    <input type="text" [(ngModel)]="empleadoForm.departamento" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>Puesto Catálogo</label>
+                    <input type="text" [(ngModel)]="empleadoForm.puesto" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>Gerente / Supervisor Directo</label>
+                    <select [(ngModel)]="empleadoForm.gerente_id" class="input-odoo-field">
+                      <option [ngValue]="null">-- Sin Gerente (Dirección) --</option>
+                      <option *ngFor="let g of empleadosDisponiblesParaJefe" [value]="g.id">
+                        {{ g.nombre_completo }} ({{ g.puesto_titulo || g.puesto }})
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-half">
+                  <h4 class="section-title">Horario Habitual (Lunes a Viernes)</h4>
+                  <div class="grid-horarios">
+                    <div class="row-h">
+                      <label>Lunes:</label>
+                      <div class="input-falso-selector w-auto" (click)="abrirTimePicker('lunes')">
+                        {{ empleadoForm.horario_lunes || '07:00 - 15:00' }} 🕒
+                      </div>
+                    </div>
+                    <div class="row-h">
+                      <label>Martes:</label>
+                      <div class="input-falso-selector w-auto" (click)="abrirTimePicker('martes')">
+                        {{ empleadoForm.horario_martes || '07:00 - 15:00' }} 🕒
+                      </div>
+                    </div>
+                    <div class="row-h">
+                      <label>Miércoles:</label>
+                      <div class="input-falso-selector w-auto" (click)="abrirTimePicker('miercoles')">
+                        {{ empleadoForm.horario_miercoles || '07:00 - 15:00' }} 🕒
+                      </div>
+                    </div>
+                    <div class="row-h">
+                      <label>Jueves:</label>
+                      <div class="input-falso-selector w-auto" (click)="abrirTimePicker('jueves')">
+                        {{ empleadoForm.horario_jueves || '07:00 - 15:00' }} 🕒
+                      </div>
+                    </div>
+                    <div class="row-h">
+                      <label>Viernes:</label>
+                      <div class="input-falso-selector w-auto" (click)="abrirTimePicker('viernes')">
+                        {{ empleadoForm.horario_viernes || '07:00 - 15:00' }} 🕒
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label>Notas de Trabajo</label>
+                <textarea rows="3" [(ngModel)]="empleadoForm.notas_trabajo" class="input-odoo-field w-full"></textarea>
+              </div>
+            </div>
+
+            <!-- PESTAÑA: PERSONAL -->
+            <div *ngIf="tabActiva === 'personal'" class="tab-pane">
+              <div class="odoo-form-columns">
+                <div class="col-half">
+                  <h4 class="section-title">Contacto Privado & Bancario</h4>
+                  <div class="form-group">
+                    <label>Correo Privado</label>
+                    <input type="email" [(ngModel)]="empleadoForm.correo_privado" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>Cuenta Bancaria</label>
+                    <input type="text" [(ngModel)]="empleadoForm.cuenta_bancaria" maxlength="16" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>CLABE Interbancaria</label>
+                    <input type="text" [(ngModel)]="empleadoForm.clabe_interbancaria" maxlength="18" class="input-odoo-field">
+                  </div>
+
+                  <h4 class="section-title mt-3">Acceso a Plataforma & Asistencia</h4>
+                  <div class="form-group">
+                    <label>Usuario Plataforma</label>
+                    <input type="text" [(ngModel)]="empleadoForm.usuario_plataforma" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" [(ngModel)]="empleadoForm.password_plataforma" class="input-odoo-field">
+                  </div>
+                  <div class="form-group">
+                    <label>ID Checador</label>
+                    <input type="text" [(ngModel)]="empleadoForm.nip_checador" maxlength="6" class="input-odoo-field">
+                  </div>
+
+                  <!-- CHECADORES ASIGNADOS (ADAPTATIVO INTERPLANTEL) -->
+                  <div class="form-group mt-2">
+                    <label>Checador(es) Asignado(s)</label>
+                    <div *ngIf="!empleadoForm.interplanteles">
+                      <select [(ngModel)]="empleadoForm.checador_asignado" class="input-odoo-field">
+                        <option *ngFor="let ch of checadoresDisponibles" [value]="ch.id">{{ ch.label }}</option>
+                      </select>
+                    </div>
+                    <div *ngIf="empleadoForm.interplanteles" class="checadores-multi-box">
+                      <label *ngFor="let ch of checadoresDisponibles" class="chk-item">
+                        <input type="checkbox" [checked]="checadorEstaSeleccionado(ch.id)" (change)="toggleChecador(ch.id)">
+                        <span>{{ ch.label }}</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-half">
+                  <h4 class="section-title">Identificación y Domicilio</h4>
+                  <div class="odoo-form-row two-cols">
+                    <div class="form-group">
+                      <label>CURP</label>
+                      <input type="text" [(ngModel)]="empleadoForm.curp" maxlength="18" style="text-transform: uppercase;" class="input-odoo-field font-bold">
+                    </div>
+                    <div class="form-group">
+                      <label>RFC</label>
+                      <input type="text" [(ngModel)]="empleadoForm.rfc" maxlength="13" style="text-transform: uppercase;" class="input-odoo-field font-bold">
+                    </div>
+                  </div>
+                  <div class="odoo-form-row two-cols">
+                    <div class="form-group">
+                      <label>NSS</label>
+                      <input type="text" [(ngModel)]="empleadoForm.nss" maxlength="11" class="input-odoo-field">
+                    </div>
+                    <div class="form-group">
+                      <label>Pasaporte</label>
+                      <input type="text" [(ngModel)]="empleadoForm.numero_pasaporte" maxlength="15" class="input-odoo-field">
+                    </div>
+                  </div>
+                  <div class="odoo-form-row two-cols">
+                    <div class="form-group">
+                      <label>Fecha de Nacimiento</label>
+                      <div class="input-falso-selector" (click)="abrirCalendario('nacimiento')">
+                        {{ empleadoForm.fecha_nacimiento || 'Seleccionar...' }} 📅
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Estado Civil</label>
+                      <select [(ngModel)]="empleadoForm.estado_civil" class="input-odoo-field">
+                        <option value="soltero">Soltero(a)</option>
+                        <option value="casado">Casado(a)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <h5 class="sub-label-section mt-3">Dirección Particular</h5>
+                  <div class="form-group"><input type="text" [(ngModel)]="empleadoForm.domicilio_calle" placeholder="Calle y número" class="input-odoo-field"></div>
+                  <div class="odoo-form-row three-cols">
+                    <input type="text" [(ngModel)]="empleadoForm.domicilio_colonia" placeholder="Colonia" class="input-odoo-field">
+                    <input type="text" [(ngModel)]="empleadoForm.domicilio_municipio" placeholder="Municipio" class="input-odoo-field">
+                    <input type="text" [(ngModel)]="empleadoForm.domicilio_cp" maxlength="5" placeholder="C.P." class="input-odoo-field">
+                  </div>
+                </div>
+              </div>
+
+              <h4 class="section-title mt-4">Contactos de Emergencia</h4>
+              <div class="odoo-form-columns">
+                <div class="col-half contact-box">
+                  <span class="badge-tag">Contacto 1</span>
+                  <div class="form-group mt-2"><label>Nombre:</label><input [(ngModel)]="empleadoForm.emergencia1_nombre" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Parentesco:</label><input [(ngModel)]="empleadoForm.emergencia1_parentesco" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Teléfono (10 dig):</label><input [(ngModel)]="empleadoForm.emergencia1_telefono" maxlength="10" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Correo:</label><input type="email" [(ngModel)]="empleadoForm.emergencia1_correo" class="input-odoo-field"></div>
+                </div>
+                <div class="col-half contact-box">
+                  <span class="badge-tag">Contacto 2</span>
+                  <div class="form-group mt-2"><label>Nombre:</label><input [(ngModel)]="empleadoForm.emergencia2_nombre" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Parentesco:</label><input [(ngModel)]="empleadoForm.emergencia2_parentesco" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Teléfono (10 dig):</label><input [(ngModel)]="empleadoForm.emergencia2_telefono" maxlength="10" class="input-odoo-field"></div>
+                  <div class="form-group"><label>Correo:</label><input type="email" [(ngModel)]="empleadoForm.emergencia2_correo" class="input-odoo-field"></div>
+                </div>
+              </div>
+
+              <h4 class="section-title mt-4">Nivel de Estudios</h4>
+              <div class="odoo-form-row two-cols">
+                <div class="form-group"><label>Carrera Técnica:</label><input [(ngModel)]="empleadoForm.estudio_tecnica_nombre" class="input-odoo-field"></div>
+                <div class="form-group"><label>Licenciatura / Ingeniería:</label><input [(ngModel)]="empleadoForm.estudio_licenciatura_nombre" class="input-odoo-field"></div>
+              </div>
+              <div class="odoo-form-row two-cols">
+                <div class="form-group"><label>Maestría:</label><input [(ngModel)]="empleadoForm.estudio_maestria_nombre" class="input-odoo-field"></div>
+                <div class="form-group"><label>Doctorado:</label><input [(ngModel)]="empleadoForm.estudio_doctorado_nombre" class="input-odoo-field"></div>
+              </div>
+            </div>
+
+            <!-- PESTAÑA: NÓMINA -->
+            <div *ngIf="tabActiva === 'nomina'" class="tab-pane">
+              <div class="odoo-form-columns">
+                <div class="col-half">
+                  <h4 class="section-title">Clasificación de Nómina</h4>
+                  <div class="form-group">
+                    <label>Tipo de Puesto</label>
+                    <select [(ngModel)]="empleadoForm.tipo_puesto_nomina" class="input-odoo-field">
+                      <option value="docente">Docente</option>
+                      <option value="auxiliar">Auxiliar</option>
+                      <option value="administrativo">Administrativo</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Modalidad de Contrato</label>
+                    <select [(ngModel)]="empleadoForm.modalidad_contrato" class="input-odoo-field">
+                      <option value="tiempo_completo">Tiempo Completo</option>
+                      <option value="medio_tiempo">Medio Tiempo</option>
+                      <option value="por_horas">Por Horas</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Horas Semanales Laboradas (Tope: 60h)</label>
+                    <input type="number" min="0" max="60" [(ngModel)]="empleadoForm.horas_semanales" class="input-odoo-field font-bold">
+                  </div>
+                  <div class="form-group">
+                    <label>Horas Frente a Grupo (Tope: 50h)</label>
+                    <input type="number" min="0" max="50" [(ngModel)]="empleadoForm.horas_frente_grupo" class="input-odoo-field">
+                  </div>
+                </div>
+
+                <div class="col-half">
+                  <h4 class="section-title">Estructura Salarial</h4>
+                  <div class="form-group">
+                    <label>Salario Base ($)</label>
+                    <input type="number" min="0" max="999999" step="0.01" [(ngModel)]="empleadoForm.salario_base" class="input-odoo-field font-bold">
+                  </div>
+                  <div class="form-group">
+                    <label>Salario Complemento ($)</label>
+                    <input type="number" min="0" max="999999" step="0.01" [(ngModel)]="empleadoForm.salario_complemento" class="input-odoo-field">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CALENDARIO DESPLEGABLE RÁPIDO -->
+  <div class="modal-sub-overlay" *ngIf="showDatePicker" (click)="showDatePicker = false">
+    <div class="modal-sub-card" (click)="$event.stopPropagation()">
+      <div class="cal-quick-header">
+        <select [(ngModel)]="mesActual" (change)="construirMatrizMes()" class="select-cal-header">
+          <option *ngFor="let m of mesesDisponibles; let i = index" [value]="i">{{ m }}</option>
+        </select>
+        <select [(ngModel)]="anioActual" (change)="construirMatrizMes()" class="select-cal-header">
+          <option *ngFor="let y of aniosDisponibles" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+
+      <div class="cal-dias-semana-row">
+        <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
+      </div>
+
+      <div class="cal-matrix-grid">
+        <div 
+          *ngFor="let dia of diasCalendario" 
+          class="cal-cell" 
+          [class.empty]="!dia" 
+          (click)="seleccionarDia(dia)">
+          {{ dia }}
+        </div>
+      </div>
+      <button type="button" class="btn-odoo btn-odoo-secondary w-full mt-2" (click)="showDatePicker = false">CANCELAR</button>
+    </div>
+  </div>
+
+  <!-- MODAL: TIME PICKER HORARIOS -->
+  <div class="modal-sub-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
+    <div class="modal-sub-card" (click)="$event.stopPropagation()">
+      <h4 class="section-title txt-center">Horario {{ campoDiaActivo | uppercase }}</h4>
+      <div class="time-picker-grid">
+        <div class="time-box">
+          <label>Entrada</label>
+          <div class="selectors-pair">
+            <select [(ngModel)]="horaEntrada">
+              <option *ngFor="let h of horasLista" [value]="h + ':00'">{{ h }}:00</option>
+              <option *ngFor="let h of horasLista" [value]="h + ':30'">{{ h }}:30</option>
+            </select>
+          </div>
+        </div>
+        <div class="time-sep">➔</div>
+        <div class="time-box">
+          <label>Salida</label>
+          <div class="selectors-pair">
+            <select [(ngModel)]="horaSalida">
+              <option *ngFor="let h of horasLista" [value]="h + ':00'">{{ h }}:00</option>
+              <option *ngFor="let h of horasLista" [value]="h + ':30'">{{ h }}:30</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="odoo-form-row two-cols mt-3">
+        <button type="button" class="btn-odoo btn-odoo-secondary" (click)="showTimePicker = false">CANCELAR</button>
+        <button type="button" class="btn-odoo btn-odoo-primary" (click)="guardarHorario()">ACEPTAR</button>
+      </div>
+    </div>
+  </div>
+
+</div>

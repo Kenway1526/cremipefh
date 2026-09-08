@@ -1,0 +1,715 @@
+/* ==========================================================================
+   HOJA DE ESTILOS COMPARTIDA - MOTOR DE ASISTENCIAS (MULTI-PLANTEL)
+   ========================================================================== */
+
+/* ==========================================================================
+   1. LAYOUT MAESTRO Y CABECERA (Adaptado a Dark Glassmorphism)
+   ========================================================================== */
+.modulo-contenedor-principal { 
+    width: 100%; 
+    padding: 30px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 25px; 
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    background-color: transparent;
+    box-sizing: border-box;
+}
+
+.fila-cabecera { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    width: 100%;
+    margin-bottom: 5px; 
+    padding-bottom: 12px; 
+    border-bottom: 2px solid var(--surface-border);
+}
+
+.cabecera-titulo-box { flex: 1; min-width: 250px; }
+.cabecera-boton-box { flex-shrink: 0; }
+
+.titulo-principal { 
+    font-size: 2.1rem; 
+    color: var(--text-main); 
+    font-weight: 800; 
+    margin: 0; 
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   2. CONTROLES UNIFICADOS (CARGA DE ARCHIVO + FECHAS RESPONSIVAS)
+   ========================================================================== */
+.layout-controles-asistencia {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap; 
+    align-items: center; 
+    justify-content: flex-start; 
+    gap: 20px; 
+    background: var(--surface-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    padding: 18px 25px;
+    border-radius: var(--radius-card); 
+    box-shadow: var(--shadow-card); 
+    border: 1px solid var(--surface-border);
+}
+
+.bloque-archivo { flex: 1; min-width: 280px; }
+
+.card-archivo-mini {
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    padding: 8px 15px;
+    border: 2px dashed var(--accent-gold); 
+    border-radius: var(--radius-btn); 
+    cursor: pointer;
+    height: 55px; 
+    transition: all 0.3s ease; 
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+}
+
+.card-archivo-mini:hover { 
+    background: rgba(255, 209, 25, 0.1); 
+    border-style: solid; 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 15px var(--gold-glow);
+}
+
+.grupo-fechas-estetico { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+}
+
+.input-fecha-personalizado {
+    min-width: 170px; 
+    background: rgba(255, 255, 255, 0.06); 
+    border: 1.5px solid var(--surface-border);
+    border-radius: var(--radius-btn); 
+    padding: 8px 14px; 
+    cursor: pointer; 
+    transition: all 0.3s ease;
+}
+
+.input-fecha-personalizado:hover { 
+    border-color: var(--accent-gold); 
+    background: rgba(255, 255, 255, 0.12); 
+    box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.label-flotante {
+    display: block; 
+    font-size: 0.65rem; 
+    font-weight: 800; 
+    color: var(--accent-gold);
+    margin-bottom: 2px; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.valor-fecha {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    font-size: 0.95rem; 
+    font-weight: 700; 
+    color: var(--text-main);
+}
+
+/* ==========================================================================
+   3. PANEL DE CONFIGURACIÓN Y BOTONES DE GESTIÓN MASIVA
+   ========================================================================== */
+.panel-edicion-premium {
+    background: var(--surface-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    padding: 25px; 
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-lg); 
+    border: 1px solid var(--surface-border);
+}
+
+.edicion-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px; 
+    padding-bottom: 15px; 
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.acciones-config-container { 
+    display: flex; 
+    gap: 12px; 
+    align-items: center; 
+    flex-wrap: wrap;
+}
+
+.btn-moderno, .btn-gestion-personal {
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    padding: 11px 20px;
+    border-radius: var(--radius-btn); 
+    font-weight: 700; 
+    font-size: 0.85rem; 
+    cursor: pointer;
+    transition: all 0.25s ease; 
+    border: none; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-azul, .btn-gestion-personal { 
+    background-color: var(--accent-gold); 
+    color: var(--primary-navy); 
+    font-weight: 800;
+}
+.btn-azul:hover, .btn-gestion-personal:hover { 
+    background-color: var(--btn-gold-hover); 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 15px var(--gold-glow);
+}
+
+.btn-verde { 
+    background-color: #10b981; 
+    color: #ffffff; 
+}
+.btn-verde:hover { 
+    background-color: #059669; 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* ==========================================================================
+   4. TABLA INTERNA DE CONFIGURACIÓN DE PERSONAL (RESPONSIVA)
+   ========================================================================== */
+.contenedor-tabla-scroll { 
+    width: 100%; 
+    overflow-x: auto; 
+    margin-top: 10px; 
+    border-radius: 12px;
+    border: 1px solid var(--surface-border);
+}
+
+.tabla-config-personal { 
+    width: 100%; 
+    border-collapse: collapse; 
+    min-width: 650px;
+}
+
+.tabla-config-personal th {
+    color: var(--accent-gold); 
+    font-weight: 800; 
+    text-transform: uppercase;
+    font-size: 0.75rem; 
+    padding: 14px 10px; 
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--surface-border); 
+    text-align: center;
+    background: rgba(9, 37, 84, 0.8);
+}
+
+.tabla-config-personal td { 
+    vertical-align: middle; 
+    padding: 10px; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.input-config {
+    width: 100%; 
+    height: 40px; 
+    border: 1px solid var(--surface-border); 
+    border-radius: var(--radius-btn);
+    padding: 0 10px; 
+    font-weight: 600; 
+    color: var(--text-main); 
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.06);
+    transition: all 0.3s; 
+    box-sizing: border-box; 
+    text-align: center;
+}
+
+.input-config:focus { 
+    border-color: var(--accent-gold); 
+    box-shadow: 0 0 8px var(--gold-glow); 
+    outline: none; 
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.input-falso-hora {
+    background: rgba(255, 255, 255, 0.06); 
+    border: 1px solid var(--surface-border); 
+    border-radius: var(--radius-btn);
+    padding: 8px; 
+    text-align: center; 
+    font-weight: 700; 
+    color: var(--accent-gold);
+    cursor: pointer; 
+    transition: all 0.2s;
+}
+
+.input-falso-hora:hover { 
+    border-color: var(--accent-gold); 
+    background: rgba(255, 209, 25, 0.12); 
+}
+
+.chk-config-gigante {
+    width: 20px; 
+    height: 20px; 
+    accent-color: var(--accent-gold);
+    cursor: pointer; 
+    display: block; 
+    margin: 0 auto;
+}
+
+/* ==========================================================================
+   5. SISTEMA DE CARD-GRID DE INCIDENCIAS
+   ========================================================================== */
+.grid-tarjetas-incidencias {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.card-incidencia {
+    background: var(--surface-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    border-radius: var(--radius-card);
+    padding: 22px;
+    border: 1px solid var(--surface-border);
+    border-left: 6px solid var(--accent-gold); 
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
+    box-sizing: border-box;
+}
+
+.card-incidencia:hover {
+    transform: translateY(-5px);
+    background: var(--surface-glass-hover);
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5), 0 0 15px var(--gold-glow);
+    border-color: var(--surface-border-hover);
+}
+
+.card-incidencia-header { display: flex; align-items: center; gap: 15px; }
+.avatar-empleado { font-size: 2.3rem; }
+
+.info-base h3 { 
+    margin: 0; 
+    color: var(--text-main); 
+    font-size: 1.15rem; 
+    font-weight: 700; 
+}
+
+.id-sub { 
+    margin: 3px 0 0 0; 
+    color: var(--text-muted); 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+}
+
+.card-incidencia-footer {
+    margin-top: 18px; 
+    padding-top: 12px;
+    border-top: 1px solid var(--surface-border); 
+    text-align: right;
+}
+
+.badge-click { 
+    font-size: 0.8rem; 
+    color: var(--accent-gold); 
+    font-weight: 700; 
+}
+
+/* ==========================================================================
+   6. MODAL DETALLE VERTICAL DE ASISTENCIAS
+   ========================================================================== */
+.modal-incidencia-overlay {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: rgba(5, 22, 51, 0.85); 
+    backdrop-filter: var(--blur-glass);
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    z-index: 3000;
+}
+
+.modal-incidencia-content {
+    background: var(--primary-navy); 
+    border-radius: var(--radius-card); 
+    width: 90%; 
+    max-width: 750px;
+    max-height: 85vh; 
+    display: flex; 
+    flex-direction: column;
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-lg); 
+    animation: modalSlideUp 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 20px 25px; 
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.modal-header h2 { 
+    font-size: 1.4rem; 
+    color: var(--text-main); 
+    font-weight: 800; 
+    margin: 0; 
+}
+
+.btn-cerrar-modal { 
+    background: none; 
+    border: none; 
+    font-size: 2.2rem; 
+    cursor: pointer; 
+    color: var(--text-muted); 
+    transition: color 0.2s;
+}
+
+.btn-cerrar-modal:hover { color: #ef4444; }
+
+.modal-body { padding: 25px; overflow-y: auto; }
+
+.tabla-modal-contenedor { 
+    border: 1px solid var(--surface-border); 
+    border-radius: 12px; 
+    overflow-x: auto; 
+}
+
+.tabla-modal-contenedor table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    min-width: 500px;
+}
+
+.tabla-modal-contenedor th { 
+    background: rgba(255, 255, 255, 0.05); 
+    color: var(--accent-gold); 
+    font-weight: 700; 
+    padding: 14px; 
+    border-bottom: 2px solid var(--surface-border); 
+}
+
+.tabla-modal-contenedor td { 
+    padding: 12px 14px; 
+    text-align: center; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    font-weight: 700; 
+    color: var(--text-main);
+}
+
+/* Clases Analíticas de Columnas */
+.col-f { color: #f87171; font-weight: 800; }
+.col-r { color: #fb923c; font-weight: 800; }
+.col-l { color: #f87171; font-weight: 800; }
+.col-ok { color: #4ade80; font-weight: 800; }
+
+.celda-salida-detectada {
+    background-color: rgba(34, 197, 94, 0.2) !important; 
+    color: #4ade80 !important;            
+}
+
+/* ==========================================================================
+   7. MODALES DE SISTEMA (CALENDARIO CENTRADO, AMPLIADO AL 150% E INHIBIDOR)
+   ========================================================================== */
+.modal-calendario-overlay, .modal-time-overlay {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: rgba(5, 22, 51, 0.92); /* Fondo oscuro e inpenetrable */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex; 
+    justify-content: center; /* Centrado Horizontal */
+    align-items: center;    /* Centrado Vertical */
+    z-index: 999999;        /* Capa superior absoluta sobre cualquier botón */
+    pointer-events: auto;   /* Absorbe y bloquea todos los clics al fondo */
+}
+
+.modal-calendario-content, .modal-time-content {
+    background: var(--primary-navy); 
+    padding: 30px; 
+    border-radius: 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px var(--gold-glow); 
+    border: 2px solid var(--accent-gold);
+    box-sizing: border-box;
+    color: var(--text-main);
+}
+
+/* CALENDARIO AMPLIADO UN 150% (525px ancho x 660px alto) */
+.modal-calendario-content { 
+    width: 525px; 
+    height: 660px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden; 
+    contain: layout style;
+    animation: modalSlideUp 0.25s ease-out;
+}
+
+.cal-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    margin-bottom: 20px; 
+    background: rgba(255, 255, 255, 0.05); 
+    padding: 15px 20px; 
+    border-radius: 16px;
+    flex-shrink: 0;
+    border: 1px solid var(--surface-border);
+}
+
+.cal-mes-anio, .time-title { 
+    font-size: 1.3rem; 
+    font-weight: 800; 
+    color: var(--accent-gold); 
+    text-transform: uppercase; 
+}
+
+.cal-header button {
+    background: var(--accent-gold); 
+    color: var(--primary-navy); 
+    border: none; 
+    width: 42px; 
+    height: 42px;
+    font-size: 1.1rem;
+    border-radius: 12px; 
+    cursor: pointer; 
+    transition: transform 0.2s;
+    font-weight: 800;
+}
+
+.cal-header button:hover { 
+    transform: scale(1.1); 
+    background: var(--btn-gold-hover); 
+}
+
+/* GRILLA ESCALADA PROPORCIONALMENTE AL 150% (Celdas de 60px) */
+.cal-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    grid-template-rows: auto repeat(6, 60px); 
+    gap: 8px; 
+    text-align: center; 
+    flex-grow: 1;
+}
+
+.cal-day-name { 
+    font-weight: 800; 
+    color: var(--accent-gold); 
+    font-size: 0.85rem; 
+    padding-bottom: 8px; 
+}
+
+.cal-day-num { 
+    height: 60px; 
+    font-size: 1.2rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    font-weight: 700; 
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.15s ease;
+}
+
+.cal-day-num:hover:not(.dia-vacio) { 
+    background: var(--accent-gold); 
+    color: var(--primary-navy); 
+    font-weight: 800;
+    transform: scale(1.05);
+}
+
+.dia-vacio {
+    cursor: default;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* SELECTORES DE HORA */
+.time-selectors { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 15px; 
+    margin-bottom: 25px; 
+}
+
+.time-column { display: flex; flex-direction: column; gap: 8px; }
+.time-column label { font-size: 0.7rem; font-weight: 800; color: var(--accent-gold); text-transform: uppercase; }
+
+.time-column select { 
+    border: 1px solid var(--surface-border); 
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px; 
+    padding: 8px; 
+    font-size: 1.2rem; 
+    font-weight: 700; 
+    color: var(--text-main); 
+    outline: none; 
+}
+
+.time-column select option {
+    background-color: var(--primary-navy);
+    color: var(--text-main);
+}
+
+.time-separator { font-size: 2rem; font-weight: 800; color: var(--accent-gold); padding-top: 20px; }
+
+.time-footer, .actions-flex { display: flex; gap: 10px; }
+
+.btn-confirmar-time { 
+    flex: 1; 
+    padding: 12px; 
+    background: var(--accent-gold); 
+    color: var(--primary-navy); 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: 800; 
+    cursor: pointer; 
+}
+
+.btn-cancelar-time, .btn-cerrar-cal { 
+    flex: 1; 
+    padding: 14px; 
+    background: rgba(255, 255, 255, 0.1); 
+    color: var(--text-muted); 
+    border: 1px solid var(--surface-border); 
+    border-radius: 12px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    flex-shrink: 0; 
+}
+
+.btn-cerrar-cal { width: 100%; margin-top: 12px; font-weight: 800; }
+.btn-cerrar-cal:hover { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4); }
+
+/* ==========================================================================
+   8. DISPARADORES DE ACCIÓN MASTER
+   ========================================================================== */
+.seccion-acciones-master { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+.btn-ejecutar-procesar { 
+    width: 100%; 
+    padding: 18px; 
+    background: #10b981; 
+    color: #ffffff; 
+    font-size: 1.3rem; 
+    font-weight: 800; 
+    border-radius: var(--radius-btn); 
+    cursor: pointer; 
+    border: none; 
+    margin-top: 15px;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-ejecutar-procesar:hover { 
+    background-color: #059669; 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.btn-descargar-excel-formateado {
+    width: 100%; 
+    padding: 15px; 
+    background-color: var(--accent-gold); 
+    color: var(--primary-navy);
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    border: none; 
+    border-radius: var(--radius-btn); 
+    cursor: pointer;
+    box-shadow: 0 4px 14px var(--gold-glow);
+    transition: all 0.2s ease;
+}
+
+.btn-descargar-excel-formateado:hover { 
+    background-color: var(--btn-gold-hover); 
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   9. RESPONSIVE Y ANIMACIONES
+   ========================================================================== */
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes modalSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@media (max-width: 768px) {
+    .modulo-contenedor-principal {
+        padding: 16px;
+    }
+
+    .titulo-principal {
+        font-size: 1.6rem;
+    }
+
+    .layout-controles-asistencia {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bloque-archivo {
+        width: 100%;
+    }
+
+    .grupo-fechas-estetico {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .input-fecha-personalizado {
+        width: 100%;
+    }
+
+    .acciones-config-container {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-moderno, .btn-gestion-personal {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .grid-tarjetas-incidencias {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-calendario-content { 
+        width: 100%; 
+        height: auto; 
+        max-height: 90vh;
+    }
+}

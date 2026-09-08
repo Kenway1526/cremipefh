@@ -6,8 +6,10 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden; /* Evita desborde horizontal */
-  background: #f0f2f5;
+  overflow-x: hidden;
+  background: var(--bg-main);
+  margin: 0;
+  padding: 0;
 }
 
 .main-content {
@@ -17,30 +19,86 @@
   flex-direction: column;
 }
 
-/* --- ESTILOS DE LA BARRA DE NAVEGACIÓN --- */
+/* ==========================================================================
+   BARRA DE NAVEGACIÓN (MAIN NAV)
+   ========================================================================== */
 .main-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 5%;
-  height: 70px;
-  background: #1a237e; /* Azul institucional */
-  color: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 0 4%;
+  height: 72px;
+  background: rgba(9, 37, 84, 0.85);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-bottom: 2px solid var(--accent-gold);
+  color: var(--text-main);
+  position: sticky;
+  top: 0;
   z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-.brand-text {
-  font-size: 1.1rem;
-  font-weight: 300;
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
 }
 
-.brand-highlight {
-  color: #ffca28; /* Amarillo para énfasis */
+.brand-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin: 0;
+  letter-spacing: 0.5px;
 }
 
-/* --- SELECTOR CENTRAL (FULL SCREEN) --- */
+.brand-highlight {
+  color: var(--accent-gold);
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   SWITCH TRIPLE DE SEDES (ADMIN GENERAL)
+   ========================================================================== */
+.switch-sedes-container {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.btn-switch {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-switch:hover {
+  color: var(--accent-gold);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-switch.activo {
+  background: var(--accent-gold);
+  color: var(--primary-navy);
+  font-weight: 800;
+  box-shadow: 0 2px 8px var(--gold-glow);
+}
+
+/* ==========================================================================
+   SELECTOR CENTRAL & TARJETAS DE MÓDULOS
+   ========================================================================== */
 .full-screen-center {
   flex: 1;
   display: flex;
@@ -48,125 +106,178 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .main-title {
-  font-size: 2rem;
-  color: #1a237e;
-  margin-bottom: 40px;
+  font-size: 2.2rem;
+  color: var(--text-main);
+  margin-bottom: 35px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* ==========================================================================
-   SISTEMA DE CARDS (SEDES Y MÓDULOS)
-   ========================================================================== */
 .grid-sedes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
   width: 90%;
-  max-width: 1200px;
-  padding: 20px;
+  max-width: 1100px;
+  padding: 10px;
 }
 
 .card-sede {
-  background: white;
-  border-radius: 20px;
-  padding: 40px 20px;
+  background: var(--surface-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-radius: var(--radius-card);
+  padding: 35px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-card);
 }
 
 .card-sede:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(26, 35, 126, 0.15);
-  border-color: #1a237e;
+  transform: translateY(-8px);
+  background: var(--surface-glass-hover);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6), 0 0 20px var(--gold-glow);
+  border-color: var(--accent-gold);
 }
 
 .card-sede .icon {
-  font-size: 3.5rem;
+  font-size: 3.2rem;
   margin-bottom: 15px;
   transition: transform 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
 .card-sede:hover .icon {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 .card-sede .text {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #37474f;
+  color: var(--text-main);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* --- BOTONES DE ACCIÓN --- */
+/* ==========================================================================
+   BOTONES DE ACCIÓN EN BARRA SUPERIOR
+   ========================================================================== */
 .nav-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
 .mega-btn-volver, .mega-btn-salir {
-  padding: 10px 20px;
-  border-radius: 12px;
+  padding: 9px 18px;
+  border-radius: var(--radius-btn);
   font-weight: 700;
   font-size: 0.8rem;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.2s ease-in-out;
+  letter-spacing: 0.5px;
 }
 
 .mega-btn-volver {
-  background: rgba(255,255,255,0.15);
-  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--surface-border);
+  color: var(--text-main);
+}
+
+.mega-btn-volver:hover {
+  background: rgba(255, 209, 25, 0.15);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
 }
 
 .mega-btn-salir {
-  background: #ff5252;
-  color: white;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 
 .mega-btn-salir:hover {
-  background: #ff1744;
-  transform: scale(1.05);
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
-/* --- NOTIFICACIONES (TOAST) --- */
+/* ==========================================================================
+   NOTIFICACIONES (TOAST)
+   ========================================================================== */
 .notificacion-toast {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  padding: 16px 24px;
-  border-radius: 16px;
-  color: white;
+  padding: 16px 22px;
+  border-radius: 12px;
+  color: #ffffff;
   z-index: 2000;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
-  min-width: 300px;
-  animation: slideLeft 0.4s ease-out;
+  backdrop-filter: var(--blur-glass);
+  box-shadow: var(--shadow-lg);
+  min-width: 320px;
+  animation: slideLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.notificacion-toast.exito { background: #2e7d32; border-left: 8px solid #1b5e20; }
-.notificacion-toast.alerta { background: #d32f2f; border-left: 8px solid #b71c1c; }
+.notificacion-toast.exito { 
+  background: rgba(9, 37, 84, 0.95); 
+  border-left: 6px solid var(--accent-gold); 
+}
+
+.notificacion-toast.alerta { 
+  background: rgba(153, 27, 27, 0.95); 
+  border-left: 6px solid #f87171; 
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-icon {
+  font-size: 1.3rem;
+}
+
+.toast-text {
+  display: flex;
+  flex-direction: column;
+}
 
 .toast-status {
   display: block;
-  font-size: 0.65rem;
-  opacity: 0.8;
+  font-size: 0.68rem;
+  color: var(--accent-gold);
   letter-spacing: 1px;
 }
 
-/* --- ANIMACIONES --- */
+.mega-login-wrapper {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* ==========================================================================
+   ANIMACIONES & RESPONSIVE
+   ========================================================================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -175,20 +286,20 @@
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* --- RESPONSIVE --- */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .main-nav {
+    padding: 0 16px;
+  }
+  
+  .switch-sedes-container {
+    display: none;
+  }
+
   .grid-sedes {
     grid-template-columns: 1fr;
   }
   
   .main-title {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
-}
-
-.mega-login-wrapper {
-  padding: 60px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }

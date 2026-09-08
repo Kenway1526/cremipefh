@@ -1,0 +1,54 @@
+<div class="hub-pantalla-fondo">
+  
+  <!-- BARRA DE NAVEGACIÓN Y CONTROL -->
+  <header class="hub-header">
+    <div class="hub-brand">
+      <span class="txt-sistema">SISTEMA DE ASISTENCIA</span>
+      <span class="txt-sub-talento">Talento Humano</span>
+    </div>
+
+    <!-- SWITCH SELECTOR DE PLANTEL (SOLO VISIBLE PARA ADMIN) -->
+    <div class="hub-switch-admin" *ngIf="esAdmin">
+      <button 
+        type="button" 
+        *ngFor="let p of listaPlantelesAdmin"
+        [class.active]="plantelSeleccionado === p.id"
+        (click)="onCambiarPlantel(p.id)"
+        class="btn-tab-plantel">
+        {{ p.label }}
+      </button>
+    </div>
+
+    <!-- BOTÓN CERRAR SESIÓN -->
+    <div class="hub-acciones-usuario">
+      <button type="button" class="btn-cerrar-sesion-hub" (click)="cerrarSesion()">
+        CERRAR SESIÓN
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL DE CARDS -->
+  <main class="hub-main-contenedor">
+    <h1 class="hub-titulo-modulo">{{ configActual.nombre }}</h1>
+
+    <div class="hub-grid-cards">
+      <div 
+        class="hub-card-item" 
+        *ngFor="let card of configActual.subModulos"
+        (click)="navegarAModulo(card.ruta)">
+        
+        <div class="card-icono-grande">
+          <span class="emoji-icono">{{ card.icono }}</span>
+        </div>
+        
+        <h2 class="card-titulo">{{ card.titulo }}</h2>
+        
+        <div class="card-pie-indicador">
+          <span class="badge-tipo">{{ card.tipo | uppercase }}</span>
+          <span class="flecha-acceso">→</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>

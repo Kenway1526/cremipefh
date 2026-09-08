@@ -268,6 +268,10 @@ export class AsistenciaAeroHacComponent implements OnInit {
       this.showCalendar = false;
     }
   
+    trackByFn(index: number): number {
+      return index;
+    }
+    
     // --- VARIABLES PARA EL TIMEPICKER ---
     showTimePicker: boolean = false;
     timeTarget: { registro: any, campo: 'inicio' | 'fin' } | null = null;

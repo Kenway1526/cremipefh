@@ -6,12 +6,13 @@ import { NotificacionService } from '../../../services/notificacion.service';
 
 interface ResultadoEmpleado {
   nombre: string;
-  asistencias: { [key: string]: string };
-  retardos: { [key: string]: string };
-  limites: { [key: string]: string };
-  faltasEspeciales: { [key: string]: 'ANTES_DE_HORA' | 'ENTRE_ENTRADA_SALIDA' | 'SALIDA_O_DESPUES' };
-  reglaInicio: string;
-  reglaFin: string;
+  asistencias: { [key: string]: string };      // Primera checada (Entrada)
+  salidasDetectadas: { [key: string]: string }; // Última checada (Salida)
+  retardos: { [key: string]: string };          // Horas de retardo
+  paracaidismo: { [key: string]: string };      // Horas de paracaidismo
+  faltasEspeciales: { [key: string]: 'ANTES_DE_HORA' | 'RETARDO' | 'PARACAIDISTA' | 'SALIDA_O_DESPUES' };
+  reglaInicio: string;                          // limite_retardo_inicio de Supabase
+  reglaFin: string;                             // limite_retardo_fin de Supabase
 }
 
 @Component({
@@ -32,13 +33,15 @@ export class AsistenciaTolucaSecComponent implements OnInit {
   resultadosTabla: { [key: string]: ResultadoEmpleado } | null = null;
   diasParaTabla: string[] = [];
 
-  // variables de soporte para la iteración de llaves en el HTML y el Modal
+  // Variables de soporte para la iteración de llaves en el HTML y el Modal
   Object = Object;
   empleadoSeleccionado: ResultadoEmpleado | null = null;
 
   constructor(private reglasService: ReglasService, private notificaciones: NotificacionService) {}
 
-  ngOnInit() { this.cargarReglas(); }
+  ngOnInit() { 
+    this.cargarReglas(); 
+  }
 
   async cargarReglas() {
     const { data } = await this.reglasService.getReglasDeTabla(this.NOMBRE_TABLA);
@@ -71,10 +74,10 @@ export class AsistenciaTolucaSecComponent implements OnInit {
     reader.onload = (e: any) => {
       try {
         const workbook = XLSX.read(e.target.result, { type: 'binary' });
-        const ws = workbook.Sheets[workbook.SheetNames[0]];
+        const ws = workbook.Sheets[workbook.SheetNames[0]]; // Primera hoja dinámica
         const rawData: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         this.dataExcelMemoria = this.mapearExcel(rawData);
-        this.notificaciones.mostrar('Excel cargado', 'exito');
+        this.notificaciones.mostrar('Excel cargado con éxito', 'exito');
       } catch (err) {
         this.notificaciones.mostrar('Error al leer Excel', 'error');
       }
@@ -83,9 +86,11 @@ export class AsistenciaTolucaSecComponent implements OnInit {
   }
 
   private mapearExcel(rawData: any[][]): any[] {
+    if (rawData.length === 0) return [];
     const headers = rawData[0];
     const nIdx = headers.indexOf('Name');
     const dIdx = headers.indexOf('Date/Time');
+    
     return rawData.slice(1).map(row => {
       const p = moment(row[dIdx], "DD/MM/YYYY hh:mm:ss a");
       return (row[nIdx] && p.isValid()) ? { 
@@ -96,12 +101,16 @@ export class AsistenciaTolucaSecComponent implements OnInit {
   }
 
   generarProcesamiento() {
-    if (this.dataExcelMemoria.length === 0) return;
+    if (!this.dataExcelMemoria || this.dataExcelMemoria.length === 0) {
+      this.notificaciones.mostrar('No hay marcajes cargados en memoria', 'alerta');
+      return;
+    }
 
     const mInicio = moment(this.fechaInicioStr).startOf('day');
     const mFin = moment(this.fechaFinStr).endOf('day');
     this.diasParaTabla = [];
     
+    // 1. Rango de días laborales (Lunes a Viernes)
     let current = mInicio.clone();
     while (current.isSameOrBefore(mFin)) {
       if (current.day() !== 0 && current.day() !== 6) {
@@ -111,47 +120,89 @@ export class AsistenciaTolucaSecComponent implements OnInit {
     }
 
     const mapaCompleto: { [key: string]: ResultadoEmpleado } = {};
+    
+    // 2. Inicialización de empleados activos desde reglas de Secundaria
     this.reglas.filter(r => r.activo).forEach(r => {
-      mapaCompleto[r.id_empleado] = {
+      const idKey = String(r.id_empleado).trim();
+      mapaCompleto[idKey] = {
         nombre: r.nombre_completo, 
         asistencias: {}, 
+        salidasDetectadas: {},
         retardos: {}, 
-        limites: {},
+        paracaidismo: {},
         faltasEspeciales: {}, 
-        reglaInicio: r.limite_retardo_inicio, 
-        reglaFin: r.limite_retardo_fin
+        reglaInicio: r.limite_retardo_inicio.substring(0, 5), 
+        reglaFin: r.limite_retardo_fin.substring(0, 5)
       };
     });
 
-    const HORA_SALIDA_SEC = "14:00"; 
+    const toMins = (hStr: string) => {
+      if (!hStr || !hStr.includes(':')) return 0;
+      const [h, m] = hStr.split(':').map(Number);
+      return (h * 60) + m;
+    };
 
+    // 3. Procesamiento Cronológico de Logs Lineales (Extracción de Extremos)
     this.dataExcelMemoria.forEach(reg => {
       const mFechaReg = moment(reg.fecha);
+      
       if (mFechaReg.isSameOrAfter(mInicio) && mFechaReg.isSameOrBefore(mFin)) {
-        const emp = mapaCompleto[reg.empleado];
+        const idEmpExcel = String(reg.empleado).trim();
+        const emp = mapaCompleto[idEmpExcel];
+
         if (emp) {
           const fKey = mFechaReg.format('YYYY-MM-DD');
           const hMarcaje = mFechaReg.format('HH:mm');
+          
+          const minMarcaje = toMins(hMarcaje);
+          const minEntradaBase = toMins(emp.reglaInicio);
+          const minToleranciaFin = minEntradaBase + 30; // +30 Minutos de tolerancia
+          const minSalidaJornada = toMins(emp.reglaFin);
 
+          // 🔄 CASO A: Primer marcaje del día (Configuración de Entrada)
           if (!emp.asistencias[fKey]) {
             emp.asistencias[fKey] = hMarcaje;
 
-            if (hMarcaje < emp.reglaInicio) {
+            if (minMarcaje < minEntradaBase) {
               emp.faltasEspeciales[fKey] = 'ANTES_DE_HORA';
             }
-            else if (hMarcaje >= emp.reglaInicio && hMarcaje < HORA_SALIDA_SEC) {
-              emp.faltasEspeciales[fKey] = 'ENTRE_ENTRADA_SALIDA';
-              emp.retardos[fKey] = hMarcaje; 
+            else if (minMarcaje >= minEntradaBase && minMarcaje <= minToleranciaFin) {
+              emp.faltasEspeciales[fKey] = 'RETARDO';
+              emp.retardos[fKey] = hMarcaje;
             }
-            else if (hMarcaje >= HORA_SALIDA_SEC) {
+            else if (minMarcaje > minToleranciaFin && minMarcaje <= minSalidaJornada) {
+              emp.faltasEspeciales[fKey] = 'PARACAIDISTA';
+              emp.paracaidismo[fKey] = hMarcaje;
+            }
+            else if (minMarcaje > minSalidaJornada) {
               emp.faltasEspeciales[fKey] = 'SALIDA_O_DESPUES';
-              emp.limites[fKey] = hMarcaje; 
+              emp.salidasDetectadas[fKey] = hMarcaje; // Marcaje único tardío cuenta como salida
+            }
+          } 
+          // 🔄 CASO B: Siguientes marcajes detectados (Evaluación de Salidas y ajuste de Extremos)
+          else {
+            const minExistente = toMins(emp.asistencias[fKey]);
+
+            if (minMarcaje > minExistente) {
+              emp.salidasDetectadas[fKey] = hMarcaje;
+            } else {
+              emp.salidasDetectadas[fKey] = emp.asistencias[fKey];
+              emp.asistencias[fKey] = hMarcaje;
+
+              // Re-evaluación automática con la entrada más temprana descubierta
+              if (minMarcaje < minEntradaBase) {
+                emp.faltasEspeciales[fKey] = 'ANTES_DE_HORA';
+              } else if (minMarcaje >= minEntradaBase && minMarcaje <= minToleranciaFin) {
+                emp.faltasEspeciales[fKey] = 'RETARDO';
+                emp.retardos[fKey] = hMarcaje;
+              }
             }
           }
         }
       }
     });
 
+    // 4. Mapeo y Filtro Analítico de Incidencias
     const mapaFiltrado: { [key: string]: ResultadoEmpleado } = {};
 
     Object.keys(mapaCompleto).forEach(idEmpleado => {
@@ -165,7 +216,16 @@ export class AsistenciaTolucaSecComponent implements OnInit {
         }
 
         const condicion = emp.faltasEspeciales[dia];
-        if (condicion === 'ENTRE_ENTRADA_SALIDA' || condicion === 'SALIDA_O_DESPUES') {
+        if (condicion === 'RETARDO' || condicion === 'PARACAIDISTA' || condicion === 'SALIDA_O_DESPUES') {
+          tieneIncidencia = true;
+          break;
+        }
+
+        if (emp.asistencias[dia] && !emp.salidasDetectadas[dia]) {
+          tieneIncidencia = true;
+          break;
+        }
+        if (emp.salidasDetectadas[dia] && toMins(emp.salidasDetectadas[dia]) < toMins(emp.reglaFin)) {
           tieneIncidencia = true;
           break;
         }
@@ -185,23 +245,51 @@ export class AsistenciaTolucaSecComponent implements OnInit {
     );
   }
 
-  // Se mantiene firma original compatible con herencia de controladores o interfaces
-  obtenerEstado(id: any, dia: string, tipo: 'F' | 'R' | 'L'): string {
+  obtenerEstado(id: any, dia: string, tipo: 'F' | 'R' | 'L' | 'S'): string {
     const idStr = String(id);
     if (!this.resultadosTabla || !this.resultadosTabla[idStr]) return '';
     return this.obtenerEstadoDirecto(this.resultadosTabla[idStr], dia, tipo);
   }
 
-  // Nueva función limpia utilizada para extraer estados tanto en tarjetas como en modales independientes
-  obtenerEstadoDirecto(d: ResultadoEmpleado, dia: string, tipo: 'F' | 'R' | 'L'): string {
+  obtenerEstadoDirecto(d: any, dia: string, tipo: 'F' | 'R' | 'L' | 'S'): string {
+    const condicion = d.faltasEspeciales[dia];
+    
+    const toMins = (hStr: string) => {
+      if (!hStr || !hStr.includes(':')) return 0;
+      const [h, m] = hStr.split(':').map(Number);
+      return (h * 60) + m;
+    };
+
+    // --- COLUMNA 1: ASISTENCIA (F) ---
     if (tipo === 'F') {
       if (!d.asistencias[dia]) return 'F'; 
-      const condicion = d.faltasEspeciales[dia];
-      if (condicion === 'ANTES_DE_HORA') return 'NA';
+      if (condicion === 'SALIDA_O_DESPUES' && !d.salidasDetectadas[dia]) return 'F'; 
+      if (condicion === 'ANTES_DE_HORA') return 'OK';
       return ''; 
     }
-    if (tipo === 'R') return d.retardos[dia] || '';
-    if (tipo === 'L') return d.limites[dia] || '';
+
+    // --- COLUMNA 2: RETARDO (R) ---
+    if (tipo === 'R') {
+      return d.retardos[dia] || ''; 
+    }
+
+    // --- COLUMNA 3: PARACAIDISMO (L) ---
+    if (tipo === 'L') {
+      return d.paracaidismo[dia] || ''; 
+    }
+
+    // --- COLUMNA 4: SALIDA (S) ---
+    if (tipo === 'S') {
+      if (!d.asistencias[dia]) return ''; 
+
+      const horaSalidaRegistrada = d.salidasDetectadas[dia];
+      
+      if (!horaSalidaRegistrada) return 'SS';
+      if (toMins(horaSalidaRegistrada) < toMins(d.reglaFin)) return 'SS';
+
+      return ''; 
+    }
+
     return '';
   }
 
@@ -215,11 +303,10 @@ export class AsistenciaTolucaSecComponent implements OnInit {
 
   exportarExcelResultados() {
     if (!this.resultadosTabla || Object.keys(this.resultadosTabla).length === 0) {
-      this.notificaciones.mostrar('No hay datos procesados para exportar', 'alerta');
+      this.notificaciones.mostrar('No hay datos processedos para exportar', 'alerta');
       return;
     }
 
-    // Estructuración manual de filas para evitar depender del HTML desbordado
     const filasReporte: any[] = [];
 
     Object.keys(this.resultadosTabla).forEach(idEmp => {
@@ -232,7 +319,8 @@ export class AsistenciaTolucaSecComponent implements OnInit {
           'Fecha': dia,
           'Falta (F)': this.obtenerEstadoDirecto(emp, dia, 'F'),
           'Retardo (R)': this.obtenerEstadoDirecto(emp, dia, 'R'),
-          'Salida (L)': this.obtenerEstadoDirecto(emp, dia, 'L')
+          'Paracaidismo (L)': this.obtenerEstadoDirecto(emp, dia, 'L'),
+          'Salida (S)': this.obtenerEstadoDirecto(emp, dia, 'S')
         });
       });
     });
@@ -314,6 +402,10 @@ export class AsistenciaTolucaSecComponent implements OnInit {
     else this.fechaFinStr = fechaSel;
     
     this.showCalendar = false;
+  }
+
+  trackByFn(index: number): number {
+    return index;
   }
 
   // --- VARIABLES Y MÉTODOS DEL TIMEPICKER ---

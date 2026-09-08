@@ -1,0 +1,194 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* ==========================================
+   GRID Y CARDS DE EMPLEADOS PROCESADOS
+   ========================================== */
+.contenedor-cards-empleados {
+  width: 100%;
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+.grid-cards-personal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.card-empleado-resultado {
+  background: rgba(14, 38, 77, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.card-empleado-resultado:hover {
+  transform: translateY(-6px);
+  border-color: var(--accent-gold, #ffd119);
+  background: rgba(18, 48, 97, 0.9);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 209, 25, 0.25);
+}
+
+.avatar-card-box {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detalles-card-box {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.nombre-empleado-card {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.id-empleado-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-gold, #ffd119);
+  background: rgba(255, 209, 25, 0.12);
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.indicador-ver-mas {
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.card-empleado-resultado:hover .indicador-ver-mas {
+  color: #ffffff;
+}
+
+.card-empleado-resultado:hover .flecha-hover {
+  transform: translateX(4px);
+  color: var(--accent-gold, #ffd119);
+}
+
+.flecha-hover {
+  transition: transform 0.2s ease;
+  font-weight: bold;
+}
+
+.fila-modal-dia {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Estilos para el Toast Reactivo Flotante */
+.fixed {
+  position: fixed;
+}
+.bottom-6 {
+  bottom: 1.5rem;
+}
+.right-6 {
+  right: 1.5rem;
+}
+.z-50 {
+  z-index: 50;
+}
+.px-5 {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+.text-white {
+  color: #ffffff;
+}
+.font-medium {
+  font-weight: 500;
+}
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.duration-300 {
+  transition-duration: 300ms;
+}
+.flex {
+  display: flex;
+}
+.items-center {
+  align-items: center;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+.border {
+  border-width: 1px;
+  border-style: solid;
+}
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+/* Colores de estado del Toast */
+.bg-emerald-600 {
+  background-color: #059669;
+}
+.border-emerald-500 {
+  border-color: #10b981;
+}
+
+.bg-amber-600 {
+  background-color: #d97706;
+}
+.border-amber-500 {
+  border-color: #f59e0b;
+}
+
+.bg-rose-600 {
+  background-color: #e11d48;
+}
+.border-rose-500 {
+  border-color: #f43f5e;
+}

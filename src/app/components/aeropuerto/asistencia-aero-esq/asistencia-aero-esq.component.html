@@ -1,18 +1,24 @@
 <div class="modulo-contenedor-principal">
   
+  <!-- CABECERA DE LA VISTA AEROPUERTO ESQUINA -->
   <div class="fila-cabecera">
-    <h2 class="titulo-principal">Checador Aeropuerto Esquina</h2>
-    <button (click)="showConfig = !showConfig" class="btn-interfaz-azul btn-gestion-personal">
-      <span class="icono-btn">{{ showConfig ? '✖️' : '⚙️' }}</span>
-      {{ showConfig ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL ESQ' }}
-    </button>
+    <div class="cabecera-titulo-box">
+      <h2 class="titulo-principal">Checador Aeropuerto Esquina</h2>
+    </div>
+    <div class="cabecera-boton-box">
+      <button type="button" (click)="showConfig = !showConfig" class="btn-interfaz-azul btn-gestion-personal">
+        <span class="icono-btn">{{ showConfig ? '✖️' : '⚙️' }}</span>
+        {{ showConfig ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL ESQ' }}
+      </button>
+    </div>
   </div>
 
+  <!-- PANEL DE CONFIGURACIÓN DE PERSONAL -->
   <div *ngIf="showConfig" class="panel-edicion-premium">
     <div class="edicion-header">
-      <h3 class="subtitulo-seccion">Configuración de Personal de Calimaya</h3>
-       <div class="acciones-config-container">
-        <button (click)="guardarCambiosMasivos()" class="btn-moderno btn-azul">
+      <h3 class="subtitulo-seccion">Configuración de Personal de Aeropuerto Esquina</h3>
+      <div class="acciones-config-container">
+        <button type="button" (click)="guardarCambiosMasivos()" class="btn-moderno btn-azul">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -21,7 +27,7 @@
           <span>Guardar Cambios Masivos</span>
         </button>
         
-        <button (click)="agregarRegla()" class="btn-moderno btn-verde">
+        <button type="button" (click)="agregarRegla()" class="btn-moderno btn-verde">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -30,6 +36,7 @@
         </button>
       </div>
     </div>
+
     <div class="contenedor-tabla-scroll">
       <table class="tabla-config-personal">
         <thead>
@@ -62,40 +69,12 @@
     </div>
   </div>
 
-  <div class="modal-time-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
-    <div class="modal-time-content" (click)="$event.stopPropagation()">
-      <h3 class="time-title">Seleccionar Hora</h3>
-      
-      <div class="time-selectors">
-        <div class="time-column">
-          <label>Hora</label>
-          <select [(ngModel)]="horaSeleccionada" size="5">
-            <option *ngFor="let h of horasDisponibles" [value]="h">{{h}}</option>
-          </select>
-        </div>
-
-        <div class="time-separator">:</div>
-
-        <div class="time-column">
-          <label>Minutos</label>
-          <select [(ngModel)]="minutoSeleccionado" size="5">
-            <option *ngFor="let m of minutosDisponibles" [value]="m">{{m}}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="time-footer">
-        <button class="btn-cancelar-time" (click)="showTimePicker = false">CANCELAR</button>
-        <button class="btn-confirmar-time" (click)="confirmarHora()">ACEPTAR</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- BARRA DE CONTROLES (CARGA DE ARCHIVOS Y RANGOS DE FECHA) -->
   <div class="layout-controles-asistencia">
     
     <div class="bloque-archivo">
-      <input type="file" (change)="onFileChange($event)" id="archivo-cal" style="display: none;">
-      <label for="archivo-cal" class="card-archivo-mini">
+      <input type="file" (change)="onFileChange($event)" id="archivo-aero-esq" style="display: none;">
+      <label for="archivo-aero-esq" class="card-archivo-mini">
         <div class="icon-box">📁</div>
         <div class="info-archivo">
           <span class="txt-principal">{{ fileName || 'Sin archivo seleccionado' }}</span>
@@ -129,42 +108,19 @@
       </div>
     </div>
 
-    <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
-      <div class="modal-calendario-content" (click)="$event.stopPropagation()">
-        
-        <div class="cal-header">
-          <button (click)="cambiarMes(-1)">◀</button>
-          <div class="cal-mes-anio">
-            {{ currentCalendarDate.format('MMMM YYYY') | uppercase }}
-          </div>
-          <button (click)="cambiarMes(1)">▶</button>
-        </div>
-
-        <div class="cal-grid">
-          <div class="cal-day-name" *ngFor="let s of semanas">{{s}}</div>
-          <div class="cal-day-num" 
-              *ngFor="let dia of diasCalendario" 
-              [class.dia-vacio]="!dia"
-              (click)="seleccionarFecha(dia)">
-            {{ dia }}
-          </div>
-        </div>
-
-        <button class="btn-cerrar-cal" (click)="showCalendar = false">CANCELAR</button>
-      </div>
-    </div>
-
   </div>
 
+  <!-- DISPARADORES DE ACCIÓN PRINCIPALES -->
   <div class="seccion-acciones-master">
-    <button (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
+    <button type="button" (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
       PROCESAR ASISTENCIA ESQUINA
     </button>
-    <button *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
+    <button type="button" *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
       DESCARGAR REPORTE FINAL
     </button>
   </div>
 
+  <!-- TABLA DIRECTA DE REPORTES / RESULTADOS -->
   <div *ngIf="resultadosTabla" class="contenedor-resultados-premium">
     <table id="tabla-aero-esq-resultados" class="tabla-asistencia-reporte tabla-con-bordes">
       <thead>
@@ -184,7 +140,7 @@
         <tr *ngFor="let res of resultadosTabla | keyvalue; let i = index" [class.fila-cebra]="i % 2 === 0">
           <td class="sticky-col name-cell">
             <strong>{{ $any(res.value).nombre }}</strong><br>
-            <span class="id-tag" style="color: #666; font-size: 0.7rem;">ID: {{ res.key }}</span>
+            <span class="id-tag" style="color: #a0aec0; font-size: 0.7rem;">ID: {{ res.key }}</span>
           </td>
           <ng-container *ngFor="let dia of diasParaTabla">
             <td class="col-falta border-cell">{{ obtenerEstado(res.key, dia, 'F') }}</td>
@@ -195,4 +151,65 @@
       </tbody>
     </table>
   </div>
+
+  <!-- ==========================================================================
+     MODALES DEL SISTEMA (UBICADOS EN LA RAÍZ DEL HTML)
+     ========================================================================== -->
+
+  <!-- MODAL 1: SELECTOR DE HORA (TIME PICKER) -->
+  <div class="modal-time-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
+    <div class="modal-time-content" (click)="$event.stopPropagation()">
+      <h3 class="time-title">Seleccionar Hora</h3>
+      
+      <div class="time-selectors">
+        <div class="time-column">
+          <label>Hora</label>
+          <select [(ngModel)]="horaSeleccionada" size="5">
+            <option *ngFor="let h of horasDisponibles" [value]="h">{{h}}</option>
+          </select>
+        </div>
+
+        <div class="time-separator">:</div>
+
+        <div class="time-column">
+          <label>Minutos</label>
+          <select [(ngModel)]="minutoSeleccionado" size="5">
+            <option *ngFor="let m of minutosDisponibles" [value]="m">{{m}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="time-footer">
+        <button type="button" class="btn-cancelar-time" (click)="showTimePicker = false">CANCELAR</button>
+        <button type="button" class="btn-confirmar-time" (click)="confirmarHora()">ACEPTAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CALENDARIO DE SELECCIÓN DE RANGOS DE FECHA -->
+  <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
+    <div class="modal-calendario-content" (click)="$event.stopPropagation()">
+      
+      <div class="cal-header">
+        <button type="button" (click)="cambiarMes(-1); $event.stopPropagation()">◀</button>
+        <div class="cal-mes-anio">
+          {{ currentCalendarDate.format('MMMM YYYY') | uppercase }}
+        </div>
+        <button type="button" (click)="cambiarMes(1); $event.stopPropagation()">▶</button>
+      </div>
+
+      <div class="cal-grid">
+        <div class="cal-day-name" *ngFor="let s of semanas">{{ s }}</div>
+        <div class="cal-day-num" 
+            *ngFor="let dia of diasCalendario; let i = index; trackBy: trackByFn" 
+            [class.dia-vacio]="!dia"
+            (click)="seleccionarFecha(dia)">
+          {{ dia }}
+        </div>
+      </div>
+
+      <button type="button" class="btn-cerrar-cal" (click)="showCalendar = false">CANCELAR</button>
+    </div>
+  </div>
+
 </div>

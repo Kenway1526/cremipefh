@@ -1,37 +1,30 @@
 <div class="modulo-contenedor-principal">
   
-  <!-- CABECERA DE LA VISTA OFICINAS -->
+  <!-- CABECERA PRINCIPAL -->
   <div class="fila-cabecera">
-    <div class="cabecera-titulo-box">
-      <h2 class="titulo-principal">Checador Oficinas</h2>
+    <div class="cabecera-titulo-box" style="display: flex; align-items: center; gap: 15px;">
+      <button type="button" class="btn-cancelar-time" style="flex: initial; padding: 6px 14px;" (click)="regresarAlHub()">
+        ← Hub
+      </button>
+      <h2 class="titulo-principal">{{ tituloVista }}</h2>
     </div>
     <div class="cabecera-boton-box">
       <button type="button" (click)="modoEdicion = !modoEdicion" class="btn-interfaz-azul btn-gestion-personal">
         <span class="icono-btn">{{ modoEdicion ? '✖️' : '⚙️' }}</span>
-        {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL OFI' }}
+        {{ modoEdicion ? 'CERRAR CONFIGURACIÓN' : 'GESTIONAR PERSONAL' }}
       </button>
     </div>
   </div>
 
-  <!-- PANEL DE CONFIGURACIÓN DE PERSONAL -->
+  <!-- PANEL DE EDICIÓN / GESTIÓN DE PERSONAL -->
   <div *ngIf="modoEdicion" class="panel-edicion-premium">
     <div class="edicion-header">
-      <h3 class="subtitulo-seccion">Configuración de Personal de Toluca</h3>
+      <h3 class="subtitulo-seccion">Configuración de Reglas: {{ tituloVista }}</h3>
       <div class="acciones-config-container">
         <button type="button" (click)="guardarCambiosMasivos()" class="btn-moderno btn-azul">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
           <span>Guardar Cambios Masivos</span>
         </button>
-        
         <button type="button" (click)="agregarRegla()" class="btn-moderno btn-verde">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
           <span>Agregar Empleado</span>
         </button>
       </div>
@@ -51,7 +44,7 @@
         <tbody>
           <tr *ngFor="let r of reglas">
             <td><input [(ngModel)]="r.id_empleado" class="input-config"></td>
-            <td><input [(ngModel)]="r.nombre_completo" class="input-config"></td>
+            <td><input [(ngModel)]="r.nombre_completo" class="input-config" style="text-align: left; padding-left: 10px;"></td>
             <td>
               <div class="input-falso-hora" (click)="abrirTimePicker(r, 'inicio')">
                 {{ r.limite_retardo_inicio }} 🕒
@@ -69,17 +62,20 @@
     </div>
   </div>
 
-  <!-- CONTROLES NAVEGACIÓN (CARGA DE ARCHIVO Y RANGOS DE FECHA) -->
+  <!-- BARRA DE CONTROLES (CARGA DE ARCHIVO Y FECHAS) -->
   <div class="layout-controles-asistencia">
-    
     <div class="bloque-archivo">
-      <input type="file" (change)="onFileChange($event)" id="archivo-ofi" style="display: none;">
-      <label for="archivo-ofi" class="card-archivo-mini">
+      <input #fileInput type="file" (change)="onFileChange($event)" accept=".xlsx, .xls" style="display: none;">
+      <div class="card-archivo-mini" (click)="fileInput.click()" style="cursor: pointer;">
         <div class="icon-box">📁</div>
         <div class="info-archivo">
-          <span class="txt-principal">{{ fileName || 'Sin archivo seleccionado' }}</span>
+          <span class="txt-principal">{{ fileName || 'Haz clic para seleccionar el archivo Excel' }}</span>
+          <span class="txt-secundario" *ngIf="dataExcelMemoria.length === 0">(.xls / .xlsx)</span>
+          <span class="txt-secundario" *ngIf="dataExcelMemoria.length > 0" style="color: #4ade80; font-weight: bold;">
+            ✓ {{ dataExcelMemoria.length }} marcajes listos
+          </span>
         </div>
-      </label>
+      </div>
     </div>
     
     <div class="grupo-fechas-estetico">
@@ -106,66 +102,65 @@
         </div>
       </div>
     </div>
-
   </div>
 
-  <!-- BARRAS DE ACCIÓN PRINCIPAL -->
+  <!-- BOTONES DE ACCIÓN -->
   <div class="seccion-acciones-master">
     <button type="button" (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
-      PROCESAR ASISTENCIA OFICINAS
+      PROCESAR ASISTENCIAS
     </button>
     <button type="button" *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
       DESCARGAR REPORTE FINAL
     </button>
+    <button type="button" *ngIf="resultadosTabla" (click)="exportarPdfCorrespondencia()" class="btn-descargar-pdf-correspondencia">
+      GENERAR ACTAS PDF
+    </button>
   </div>
 
-  <!-- GRID DE TARJETAS DE INCIDENCIAS -->
-  <div class="grid-tarjetas-incidencias" *ngIf="resultadosTabla">
-    <div class="card-incidencia" 
-         *ngFor="let res of resultadosTabla | keyvalue" 
-         (click)="abrirModalEmpleado($any(res.value))">
-      
-      <div class="card-incidencia-header">
-        <span class="avatar-empleado">👤</span>
-        <div class="info-base">
-          <h3>{{ $any(res.value).nombre }}</h3>
-          <p class="id-sub">ID: {{ res.key }}</p>
+  <!-- GRID DE CARDS INTERACTIVAS DE EMPLEADOS -->
+  <div *ngIf="resultadosTabla" class="contenedor-cards-empleados">
+    <div class="grid-cards-personal">
+      <div 
+        class="card-empleado-resultado" 
+        *ngFor="let item of resultadosTabla | keyvalue"
+        (click)="abrirModalEmpleado($any(item.value))">
+        
+        <div class="avatar-card-box">
+          <span class="avatar-emoji">👤</span>
         </div>
-      </div>
 
-      <div class="card-incidencia-footer">
-        <span class="badge-click">Ver historial de incidencias →</span>
+        <div class="detalles-card-box">
+          <h3 class="nombre-empleado-card">{{ $any(item.value).nombre }}</h3>
+          <span class="id-empleado-badge">ID: {{ item.key }}</span>
+        </div>
+
+        <div class="indicador-ver-mas">
+          <span>Ver Incidencias</span>
+          <span class="flecha-hover">→</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ==========================================================================
-     MODALES DEL SISTEMA (RAÍZ DEL HTML)
-     ========================================================================== -->
-
-  <!-- MODAL 1: SELECTOR DE HORA (TIME PICKER) -->
+  <!-- MODAL: TIME PICKER -->
   <div class="modal-time-overlay" *ngIf="showTimePicker" (click)="showTimePicker = false">
     <div class="modal-time-content" (click)="$event.stopPropagation()">
       <h3 class="time-title">Seleccionar Hora</h3>
-      
       <div class="time-selectors">
         <div class="time-column">
           <label>Hora</label>
           <select [(ngModel)]="horaSeleccionada" size="5">
-            <option *ngFor="let h of horasDisponibles" [value]="h">{{h}}</option>
+            <option *ngFor="let h of horasDisponibles" [value]="h">{{ h }}</option>
           </select>
         </div>
-
         <div class="time-separator">:</div>
-
         <div class="time-column">
           <label>Minutos</label>
           <select [(ngModel)]="minutoSeleccionado" size="5">
-            <option *ngFor="let m of minutosDisponibles" [value]="m">{{m}}</option>
+            <option *ngFor="let m of minutosDisponibles" [value]="m">{{ m }}</option>
           </select>
         </div>
       </div>
-
       <div class="time-footer">
         <button type="button" class="btn-cancelar-time" (click)="showTimePicker = false">CANCELAR</button>
         <button type="button" class="btn-confirmar-time" (click)="confirmarHora()">ACEPTAR</button>
@@ -173,66 +168,68 @@
     </div>
   </div>
 
-  <!-- MODAL 2: CALENDARIO DE SELECCIÓN DE RANGOS DE FECHA -->
+  <!-- MODAL: CALENDARIO -->
   <div class="modal-calendario-overlay" *ngIf="showCalendar" (click)="showCalendar = false">
     <div class="modal-calendario-content" (click)="$event.stopPropagation()">
-      
       <div class="cal-header">
         <button type="button" (click)="cambiarMes(-1); $event.stopPropagation()">◀</button>
-        <div class="cal-mes-anio">
-          {{ currentCalendarDate.format('MMMM YYYY') | uppercase }}
-        </div>
+        <div class="cal-mes-anio">{{ currentCalendarDate.format('MMMM YYYY') | uppercase }}</div>
         <button type="button" (click)="cambiarMes(1); $event.stopPropagation()">▶</button>
       </div>
-
       <div class="cal-grid">
         <div class="cal-day-name" *ngFor="let s of semanas">{{ s }}</div>
         <div class="cal-day-num" 
-            *ngFor="let dia of diasCalendario; let i = index; trackBy: trackByFn" 
-            [class.dia-vacio]="!dia"
-            (click)="seleccionarFecha(dia)">
+             *ngFor="let dia of diasCalendario; let i = index; trackBy: trackByFn" 
+             [class.dia-vacio]="!dia"
+             (click)="seleccionarFecha(dia)">
           {{ dia }}
         </div>
       </div>
-
       <button type="button" class="btn-cerrar-cal" (click)="showCalendar = false">CANCELAR</button>
     </div>
   </div>
 
-  <!-- MODAL 3: HISTORIAL DETALLADO DE INCIDENCIAS POR EMPLEADO -->
+  <!-- MODAL: MATRIZ DE INCIDENCIAS POR DÍA DEL EMPLEADO -->
   <div class="modal-incidencia-overlay" *ngIf="empleadoSeleccionado" (click)="cerrarModalEmpleado()">
-    <div class="modal-incidencia-content" (click)="$event.stopPropagation()">
+    <div class="modal-incidencia-content" (click)="$event.stopPropagation()" style="max-width: 950px; width: 95%;">
       
       <div class="modal-header">
-        <h2>Historial Detallado: {{ empleadoSeleccionado.nombre }}</h2>
+        <div>
+          <h2>Reporte Detallado: {{ empleadoSeleccionado.nombre }}</h2>
+          <span style="color: var(--accent-gold, #ffd119); font-size: 0.85rem; font-weight: bold;">
+            Horario Base: {{ empleadoSeleccionado.reglaInicio }} - {{ empleadoSeleccionado.reglaFin }}
+          </span>
+        </div>
         <button type="button" class="btn-cerrar-modal" (click)="cerrarModalEmpleado()">×</button>
       </div>
 
-      <div class="modal-body">
-        <div class="tabla-modal-contenedor">
-          <table>
+      <div class="modal-body" style="padding: 20px;">
+        <div class="tabla-modal-contenedor" style="max-height: 450px; overflow-y: auto;">
+          <table class="tabla-asistencia-reporte tabla-con-bordes" style="width: 100%;">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Asistencia (F)</th>
+                <th style="width: 130px;">Fecha</th>
+                <th>Falta (F)</th>
                 <th>Retardo (R)</th>
                 <th>Paracaidismo (L)</th>
-                <th>Salida Correcta (OK)</th>
+                <th>Salida (S)</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let dia of diasParaTabla">
-                <td style="font-weight: 600; color: #ffffff;">{{ dia | date:'dd/MM/yyyy' }}</td>
-                <td class="col-f" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') === 'F' ? '#f87171' : '#4ade80'" style="font-weight: bold;">
+              <tr *ngFor="let dia of diasParaTabla" class="fila-modal-dia">
+                <td style="font-weight: 700; color: #ffffff;">
+                  {{ dia | date:'dd/MM/yyyy' }}
+                </td>
+                <td class="col-falta border-cell" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') === 'F' ? '#f87171' : '#4ade80'" style="font-weight: bold; text-align: center;">
                   {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') }}
                 </td>
-                <td class="col-r" style="color: #fb923c; font-weight: 600;">
+                <td class="col-retardo border-cell" style="color: #fb923c; font-weight: 700; text-align: center;">
                   {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'R') }}
                 </td>
-                <td class="col-l" [ngClass]="{'celda-salida-detectada': obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') !== ''}">
+                <td class="col-limite border-cell" style="color: #cbd5e1; text-align: center;">
                   {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') }}
                 </td>
-                <td class="col-ok" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') === 'SS' ? '#f87171' : '#4ade80'">
+                <td class="border-cell" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') === 'SS' ? '#f87171' : '#4ade80'" style="font-weight: bold; text-align: center;">
                   {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') }}
                 </td>
               </tr>
@@ -242,6 +239,24 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- TOAST FLOTANTE REACTIVO -->
+  <div *ngIf="notificacionActual" 
+       class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-white font-medium transition-all duration-300 flex items-center gap-3 border"
+       [ngClass]="{
+         'bg-emerald-600 border-emerald-500': notificacionActual.tipo === 'exito',
+         'bg-amber-600 border-amber-500': notificacionActual.tipo === 'alerta',
+         'bg-rose-600 border-rose-500': notificacionActual.tipo === 'error'
+       }">
+    <span class="text-lg">
+      <ng-container [ngSwitch]="notificacionActual.tipo">
+        <span *ngSwitchCase="'exito'">✅</span>
+        <span *ngSwitchCase="'alerta'">⚠️</span>
+        <span *ngSwitchCase="'error'">❌</span>
+      </ng-container>
+    </span>
+    <span>{{ notificacionActual.mensaje }}</span>
   </div>
 
 </div>

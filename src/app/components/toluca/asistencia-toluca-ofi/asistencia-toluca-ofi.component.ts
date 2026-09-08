@@ -445,6 +445,9 @@ export class AsistenciaTolucaOfiComponent implements OnInit {
     this.showCalendar = false;
   }
 
+  trackByFn(index: number): number {
+    return index;
+  }
   // --- GESTIÓN DE TIMEPICKER CUSTOM ---
   showTimePicker: boolean = false;
   timeTarget: { registro: any, campo: 'inicio' | 'fin' } | null = null;
