@@ -192,3 +192,31 @@
 .border-rose-500 {
   border-color: #f43f5e;
 }
+
+.btn-descargar-pdf-correspondencia {
+  background-color: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-descargar-pdf-correspondencia:hover {
+  background-color: #0369a1;
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-descargar-pdf-correspondencia:active {
+  transform: translateY(0);
+}

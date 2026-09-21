@@ -35,15 +35,17 @@
         <thead>
           <tr>
             <th>ID</th>
+            <th>No. Empleado</th>
             <th>Nombre Completo</th>
-            <th>Inicio Retardo</th>
-            <th>Límite Falta</th>
+            <th>Hora de entrada</th>
+            <th>Hora de salida</th>
             <th class="txt-center">Activo</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let r of reglas">
             <td><input [(ngModel)]="r.id_empleado" class="input-config"></td>
+            <td><input [(ngModel)]="r.numero_empleado" class="input-config" placeholder="No. Nómina"></td>
             <td><input [(ngModel)]="r.nombre_completo" class="input-config" style="text-align: left; padding-left: 10px;"></td>
             <td>
               <div class="input-falso-hora" (click)="abrirTimePicker(r, 'inicio')">
@@ -109,33 +111,35 @@
     <button type="button" (click)="generarProcesamiento()" class="btn-ejecutar-procesar">
       PROCESAR ASISTENCIAS
     </button>
-    <button type="button" *ngIf="resultadosTabla" (click)="exportarExcelResultados()" class="btn-descargar-excel-formateado">
-      DESCARGAR REPORTE FINAL
-    </button>
-    <button type="button" *ngIf="resultadosTabla" (click)="exportarPdfCorrespondencia()" class="btn-descargar-pdf-correspondencia">
+    <button type="button" (click)="exportarPdfCorrespondencia()" class="btn-descargar-pdf-correspondencia">
       GENERAR ACTAS PDF
     </button>
   </div>
 
-  <!-- GRID DE CARDS INTERACTIVAS DE EMPLEADOS -->
-  <div *ngIf="resultadosTabla" class="contenedor-cards-empleados">
+  <!-- GRID DE CARDS INTERACTIVAS DE EMPLEADOS CON INCIDENCIAS -->
+  <div *ngIf="empleadosIncidencias.length > 0" class="contenedor-cards-empleados">
+    <h3 style="color: #cbd5e1; margin-bottom: 12px; font-size: 1.1rem;">Colaboradores con Faltas o Retardos Detectados:</h3>
     <div class="grid-cards-personal">
       <div 
         class="card-empleado-resultado" 
-        *ngFor="let item of resultadosTabla | keyvalue"
-        (click)="abrirModalEmpleado($any(item.value))">
+        *ngFor="let item of empleadosIncidencias">
         
+        <!-- Checkbox de inclusión para el reporte PDF -->
+        <div style="display: flex; align-items: center; padding-left: 10px;">
+          <input type="checkbox" [(ngModel)]="item.seleccionadoParaReporte" title="Incluir en reporte PDF" style="width: 20px; height: 20px; cursor: pointer;">
+        </div>
+
         <div class="avatar-card-box">
-          <span class="avatar-emoji">👤</span>
+          <span class="avatar-emoji">⚠️</span>
         </div>
 
-        <div class="detalles-card-box">
-          <h3 class="nombre-empleado-card">{{ $any(item.value).nombre }}</h3>
-          <span class="id-empleado-badge">ID: {{ item.key }}</span>
+        <div class="detalles-card-box" style="flex: 1; cursor: pointer;" (click)="abrirModalEmpleado(item)">
+          <h3 class="nombre-empleado-card">{{ item.nombre }}</h3>
+          <span class="id-empleado-badge">ID: {{ item.id_empleado }} | Incidencias: {{ item.incidencias.length }}</span>
         </div>
 
-        <div class="indicador-ver-mas">
-          <span>Ver Incidencias</span>
+        <div class="indicador-ver-mas" style="cursor: pointer;" (click)="abrirModalEmpleado(item)">
+          <span>Revisar / Justificar</span>
           <span class="flecha-hover">→</span>
         </div>
       </div>
@@ -189,48 +193,47 @@
     </div>
   </div>
 
-  <!-- MODAL: MATRIZ DE INCIDENCIAS POR DÍA DEL EMPLEADO -->
-  <div class="modal-incidencia-overlay" *ngIf="empleadoSeleccionado" (click)="cerrarModalEmpleado()">
-    <div class="modal-incidencia-content" (click)="$event.stopPropagation()" style="max-width: 950px; width: 95%;">
+  <!-- MODAL: REVISIÓN Y JUSTIFICACIÓN DE INCIDENCIAS POR EMPLEADO -->
+  <div class="modal-incidencia-overlay" *ngIf="empleadoSeleccionadoModal" (click)="cerrarModalEmpleado()">
+    <div class="modal-incidencia-content" (click)="$event.stopPropagation()" style="max-width: 750px; width: 95%;">
       
       <div class="modal-header">
         <div>
-          <h2>Reporte Detallado: {{ empleadoSeleccionado.nombre }}</h2>
+          <h2>Revisión de Incidencias: {{ empleadoSeleccionadoModal.nombre }}</h2>
           <span style="color: var(--accent-gold, #ffd119); font-size: 0.85rem; font-weight: bold;">
-            Horario Base: {{ empleadoSeleccionado.reglaInicio }} - {{ empleadoSeleccionado.reglaFin }}
+            ID Empleado: {{ empleadoSeleccionadoModal.id_empleado }}
           </span>
         </div>
         <button type="button" class="btn-cerrar-modal" (click)="cerrarModalEmpleado()">×</button>
       </div>
 
       <div class="modal-body" style="padding: 20px;">
-        <div class="tabla-modal-contenedor" style="max-height: 450px; overflow-y: auto;">
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">
+          Selecciona la casilla "Justificado / No Procede" si cuentas con el comprobante que invalide la incidencia para el reporte PDF.
+        </p>
+        <div class="tabla-modal-contenedor" style="max-height: 400px; overflow-y: auto;">
           <table class="tabla-asistencia-reporte tabla-con-bordes" style="width: 100%;">
             <thead>
               <tr>
-                <th style="width: 130px;">Fecha</th>
-                <th>Falta (F)</th>
-                <th>Retardo (R)</th>
-                <th>Paracaidismo (L)</th>
-                <th>Salida (S)</th>
+                <th>Fecha</th>
+                <th>Tipo de Incidencia</th>
+                <th>Detalle / Hora</th>
+                <th style="text-align: center;">¿Justificado / No Procede?</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let dia of diasParaTabla" class="fila-modal-dia">
+              <tr *ngFor="let inc of empleadoSeleccionadoModal.incidencias" class="fila-modal-dia">
                 <td style="font-weight: 700; color: #ffffff;">
-                  {{ dia | date:'dd/MM/yyyy' }}
+                  {{ inc.dia | date:'dd/MM/yyyy' }}
                 </td>
-                <td class="col-falta border-cell" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') === 'F' ? '#f87171' : '#4ade80'" style="font-weight: bold; text-align: center;">
-                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'F') }}
+                <td [style.color]="inc.tipo === 'FALTA' ? '#f87171' : '#fb923c'" style="font-weight: bold;">
+                  {{ inc.tipo }}
                 </td>
-                <td class="col-retardo border-cell" style="color: #fb923c; font-weight: 700; text-align: center;">
-                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'R') }}
+                <td style="color: #cbd5e1;">
+                  {{ inc.horaChecada || 'Sin registro (Falta)' }}
                 </td>
-                <td class="col-limite border-cell" style="color: #cbd5e1; text-align: center;">
-                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'L') }}
-                </td>
-                <td class="border-cell" [style.color]="obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') === 'SS' ? '#f87171' : '#4ade80'" style="font-weight: bold; text-align: center;">
-                  {{ obtenerEstadoDirecto(empleadoSeleccionado, dia, 'S') }}
+                <td style="text-align: center;">
+                  <input type="checkbox" [(ngModel)]="inc.justificado" style="width: 20px; height: 20px; cursor: pointer;" title="Marcar si no procede por justificante">
                 </td>
               </tr>
             </tbody>

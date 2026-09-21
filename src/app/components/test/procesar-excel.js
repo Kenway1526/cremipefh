@@ -38,7 +38,7 @@ exports.handler = async (event, context) => {
         const FORMATO_ENTRADA = "YYYY-MM-DD HH:mm:ss";
 
         const idxName = headers.indexOf('Name');
-        const idxDateTime = headers.indexOf('Date/Time');
+        const idxDateTime = headers.indexOf('No.');
 
         const formattedData = dataRows.map((row) => {
             const employeeRaw = row[idxName]?.toString().trim(); 

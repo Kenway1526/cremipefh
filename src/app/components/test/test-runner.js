@@ -18,7 +18,6 @@ const SEDE_ID = 'oficinas';
 const FECHA_INICIO = '2026-08-17';
 const FECHA_FIN = '2026-09-07';
 
-// Mapeo exacto de tablas por sede según tu arquitectura
 const TABLAS_SEDES = {
   'toluca_secundaria': 'asistencia_toluca_sec',
   'toluca_oficinas': 'asistencia_toluca_ofi',
@@ -27,7 +26,6 @@ const TABLAS_SEDES = {
   'aeropuerto_esquina': 'asistencia_aero_esq'
 };
 
-// Normalizador de ID (quita ceros a la izquierda y espacios)
 function limpiarId(idRaw) {
   if (!idRaw) return '';
   const str = String(idRaw).trim();
@@ -116,9 +114,9 @@ function parsearExcelMatricial(rawData, fechaInicioStr) {
 }
 
 // ==========================================
-// 3. MOTOR DE PROCESAMIENTO UNIFICADO POR ID
+// 3. MOTOR DE EVALUACIÓN DE ENTRADA Y SALIDA
 // ==========================================
-function procesar(plantelId, sedeId, dataMemoria, reglas, fechaInicioStr, fechaFinStr) {
+function procesar(dataMemoria, reglas, fechaInicioStr, fechaFinStr) {
   const mInicio = moment(fechaInicioStr).startOf('day');
   const mFin = moment(fechaFinStr).endOf('day');
   const diasLaborales = [];
@@ -131,99 +129,108 @@ function procesar(plantelId, sedeId, dataMemoria, reglas, fechaInicioStr, fechaF
     aux.add(1, 'days');
   }
 
-  const mapaCompleto = {};
-
-  reglas.filter(r => r.activo).forEach(r => {
-    const idKey = limpiarId(r.id_empleado);
-    mapaCompleto[idKey] = {
-      id_empleado: idKey,
-      nombre: r.nombre_completo,
-      asistencias: {},
-      salidasDetectadas: {},
-      retardos: {},
-      paracaidismo: {},
-      limites: {},
-      faltasEspeciales: {},
-      reglaInicio: r.limite_retardo_inicio ? r.limite_retardo_inicio.substring(0, 5) : '08:00',
-      reglaFin: r.limite_retardo_fin ? r.limite_retardo_fin.substring(0, 5) : '16:00'
-    };
-  });
-
   const toMins = (hStr) => {
     if (!hStr || !hStr.includes(':')) return 0;
     const [h, m] = hStr.split(':').map(Number);
     return (h * 60) + m;
   };
 
-  // Agrupar marcajes estrictamente por ID y Fecha
   const agrupadoPorColaboradorYDia = {};
 
+  // Inicializar empleados con base en Supabase
+  const resultadoEmpleados = {};
+
+  reglas.filter(r => r.activo).forEach(r => {
+    const idKey = limpiarId(r.id_empleado);
+    resultadoEmpleados[idKey] = {
+      id_empleado: idKey,
+      nombre: r.nombre_completo,
+      horario_base: {
+        entrada_oficial: r.limite_retardo_inicio ? r.limite_retardo_inicio.substring(0, 5) : '08:00',
+        salida_oficial: r.limite_retardo_fin ? r.limite_retardo_fin.substring(0, 5) : '16:00'
+      },
+      dias: {}
+    };
+
+    agrupadoPorColaboradorYDia[idKey] = {};
+    diasLaborales.forEach(dia => {
+      agrupadoPorColaboradorYDia[idKey][dia] = [];
+    });
+  });
+
+  // Agrupar checadas sin duplicados exactos
   dataMemoria.forEach(reg => {
     const mFechaReg = moment(reg.fecha);
     if (mFechaReg.isSameOrAfter(mInicio) && mFechaReg.isSameOrBefore(mFin)) {
       const fKey = mFechaReg.format('YYYY-MM-DD');
       const idEmp = limpiarId(reg.id_empleado || reg.id);
 
-      // Cruce estricto por ID universal contra Supabase
-      if (mapaCompleto[idEmp]) {
-        if (!agrupadoPorColaboradorYDia[idEmp]) agrupadoPorColaboradorYDia[idEmp] = {};
-        if (!agrupadoPorColaboradorYDia[idEmp][fKey]) agrupadoPorColaboradorYDia[idEmp][fKey] = [];
-        agrupadoPorColaboradorYDia[idEmp][fKey].push(reg.hora.substring(0, 5));
+      if (agrupadoPorColaboradorYDia[idEmp] && agrupadoPorColaboradorYDia[idEmp][fKey]) {
+        const horaLimpia = reg.hora.substring(0, 5);
+        if (!agrupadoPorColaboradorYDia[idEmp][fKey].includes(horaLimpia)) {
+          agrupadoPorColaboradorYDia[idEmp][fKey].push(horaLimpia);
+        }
       }
     }
   });
 
-  // Resolver incidencias con base en la primera y última checada del día
-  Object.keys(mapaCompleto).forEach(idEmp => {
-    const emp = mapaCompleto[idEmp];
-    const diasColaborador = agrupadoPorColaboradorYDia[idEmp] || {};
+  // Evaluar estatus por día para cada colaborador
+  Object.keys(resultadoEmpleados).forEach(idEmp => {
+    const emp = resultadoEmpleados[idEmp];
+    const minEntradaOficial = toMins(emp.horario_base.entrada_oficial);
 
     diasLaborales.forEach(dia => {
-      const checadasDia = diasColaborador[dia];
+      const checadas = (agrupadoPorColaboradorYDia[idEmp][dia] || []).sort((a, b) => toMins(a) - toMins(b));
 
-      if (!checadasDia || checadasDia.length === 0) {
-        return; // Queda implícitamente como FALTA (F)
+      if (checadas.length === 0) {
+        emp.dias[dia] = {
+          estatus_entrada: 'FALTA',
+          hora_entrada: null,
+          hora_salida: null,
+          marcajes_crudos: []
+        };
+        return;
       }
 
-      // Ordenar cronológicamente
-      checadasDia.sort((a, b) => toMins(a) - toMins(b));
-      const primeraChecada = checadasDia[0];
-      const ultimaChecada = checadasDia.length > 1 ? checadasDia[checadasDia.length - 1] : null;
+      // La primera checada siempre corresponde al marcaje de entrada
+      const primeraChecada = checadas[0];
+      const minPrimeraChecada = toMins(primeraChecada);
 
-      const minMarcaje = toMins(primeraChecada);
-      const minEntradaBase = toMins(emp.reglaInicio);
-      const minToleranciaFin = minEntradaBase + 30;
-      const minSalidaJornada = toMins(emp.reglaFin);
+      // Evaluación de entrada: A tiempo vs Retardo
+      const estatusEntrada = minPrimeraChecada <= minEntradaOficial ? 'A_TIEMPO' : 'RETARDO';
 
-      // EVALUACIÓN ESTRICTA
-      if (minMarcaje <= minEntradaBase) {
-        emp.asistencias[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'ANTES_DE_HORA';
-      } else if (minMarcaje > minEntradaBase && minMarcaje <= minToleranciaFin) {
-        emp.retardos[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'RETARDO';
-      } else if (minMarcaje > minToleranciaFin && minMarcaje <= minSalidaJornada) {
-        emp.paracaidismo[dia] = primeraChecada;
-        emp.limites[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'PARACAIDISTA';
-      } else {
-        emp.faltasEspeciales[dia] = 'SALIDA_O_DESPUES';
+      let horaSalida = null;
+
+      if (checadas.length > 1) {
+        const ultimaChecada = checadas[checadas.length - 1];
+        const minUltimaChecada = toMins(ultimaChecada);
+
+        // Descartar falsas salidas: debe haber al menos 30 minutos de diferencia respecto a la entrada
+        if (minUltimaChecada - minPrimeraChecada >= 30) {
+          horaSalida = ultimaChecada;
+        }
       }
 
-      if (ultimaChecada && toMins(ultimaChecada) >= minSalidaJornada) {
-        emp.salidasDetectadas[dia] = ultimaChecada;
-      }
+      emp.dias[dia] = {
+        estatus_entrada: estatusEntrada,
+        hora_entrada: primeraChecada,
+        hora_salida: horaSalida,
+        marcajes_crudos: checadas
+      };
     });
   });
 
-  return { resultados: mapaCompleto, diasLaborales };
+  return {
+    diasLaborales,
+    resultados: resultadoEmpleados
+  };
 }
 
 // ==========================================
-// 4. EJECUCIÓN PRINCIPAL ASÍNCRONA
+// 4. EJECUCIÓN PRINCIPAL
 // ==========================================
 async function run() {
-  console.log('🚀 Iniciando Test Runner conectado a Supabase...\n');
+  console.log('🚀 Iniciando análisis de entradas, retardos y salidas...\n');
 
   const keySede = `${PLANTEL_ID}_${SEDE_ID}`;
   const nombreTabla = TABLAS_SEDES[keySede];
@@ -233,7 +240,6 @@ async function run() {
     return;
   }
 
-  console.log(`📡 Consultando Supabase en la tabla: "${nombreTabla}"...`);
   const { data: reglasDb, error } = await supabase.from(nombreTabla).select('*');
 
   if (error) {
@@ -241,8 +247,10 @@ async function run() {
     return;
   }
 
-  console.log(`✅ Reglas recuperadas de ${nombreTabla}: ${reglasDb ? reglasDb.length : 0} registros.`);
-  if (!reglasDb || reglasDb.length === 0) return;
+  if (!reglasDb || reglasDb.length === 0) {
+    console.warn('⚠️ No se encontraron empleados registrados en Supabase.');
+    return;
+  }
 
   const rutaCompleta = path.join(__dirname, ARCHIVO_EXCEL);
   if (!fs.existsSync(rutaCompleta)) {
@@ -254,29 +262,10 @@ async function run() {
   const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('asistencia')) 
                  || (workbook.SheetNames.length > 2 ? workbook.SheetNames[2] : workbook.SheetNames[0]);
   
-  console.log(`📄 Leyendo hoja de asistencia: "${sheetName}"`);
   const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' });
   const marcajesEnMemoria = parsearExcelMatricial(rawData, FECHA_INICIO);
-  console.log(`⚡ Marcajes parseados del Excel: ${marcajesEnMemoria.length}`);
-
-  const idsExcel = new Set(marcajesEnMemoria.map(m => m.id_empleado));
-  const idsSupabase = new Set(reglasDb.map(r => limpiarId(r.id_empleado)));
-  
-  console.log(`\n🔍 AUDITORÍA DE MATCH POR ID:`);
-  console.log(`- IDs únicos en el Excel: ${idsExcel.size}`);
-  console.log(`- IDs únicos en Supabase: ${idsSupabase.size}`);
-  
-  const matches = [...idsExcel].filter(id => idsSupabase.has(id));
-  console.log(`🎯 IDs que coincidieron: ${matches.length}`);
-  
-  const noEncontradosEnDb = [...idsExcel].filter(id => !idsSupabase.has(id));
-  if (noEncontradosEnDb.length > 0) {
-    console.warn(`⚠️ IDs del Excel ausentes en Supabase (${noEncontradosEnDb.length}):`, noEncontradosEnDb);
-  }
 
   const resultadoFinal = procesar(
-    PLANTEL_ID,
-    SEDE_ID,
     marcajesEnMemoria,
     reglasDb,
     FECHA_INICIO,
@@ -288,9 +277,9 @@ async function run() {
     JSON.stringify(resultadoFinal, null, 2)
   );
 
-  console.log(`\n✅ Archivo generado: 03_resultado_final.json`);
-  console.log(`Días laborales calculados: ${resultadoFinal.diasLaborales.length}`);
-  console.log(`Total empleados en la matriz final: ${Object.keys(resultadoFinal.resultados).length}\n`);
+  console.log('✅ Archivo generado: 03_resultado_final.json');
+  console.log(`Días evaluados: ${resultadoFinal.diasLaborales.length}`);
+  console.log(`Empleados evaluados: ${Object.keys(resultadoFinal.resultados).length}\n`);
 }
 
 run();

@@ -5,6 +5,7 @@ import { environment } from 'src/environments/environment';
 export interface ReglaEmpleado {
   id?: string;
   id_empleado: string;
+  numero_empleado?: string;
   nombre_completo: string;
   limite_retardo_inicio: string;
   limite_retardo_fin: string;

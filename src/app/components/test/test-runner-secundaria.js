@@ -33,16 +33,13 @@ function limpiarId(idRaw) {
 function parsearExcelSecundaria(rawData) {
   if (!rawData || rawData.length === 0) return [];
 
-  // Según el formato visual confirmado:
-  // Columna 2 (C) = "No." (ID del empleado)
-  // Columna 3 (D) = "Date/Time" (Fecha y hora del marcaje)
   const idIdx = 2; 
   const dIdx = 3;  
 
   console.log(`📋 Leyendo Secundaria columnas fijas: ID en [col ${idIdx}] ("No."), Fecha/Hora en [col ${dIdx}] ("Date/Time")`);
 
   const marcajes = [];
-  const filasDatos = rawData.slice(1); // Omitir la fila 0 de encabezados
+  const filasDatos = rawData.slice(1);
 
   filasDatos.forEach((row) => {
     const valId = row[idIdx];
@@ -84,7 +81,7 @@ function parsearExcelSecundaria(rawData) {
 
     if (mFecha && mFecha.isValid()) {
       marcajes.push({
-        id_empleado: limpiarId(valId), // ID universal extraído de "No."
+        id_empleado: limpiarId(valId),
         fechaDate: mFecha.toDate(),
         fechaStr: mFecha.format('YYYY-MM-DD'),
         hora: mFecha.format('HH:mm')
@@ -97,7 +94,7 @@ function parsearExcelSecundaria(rawData) {
 }
 
 // ==========================================
-// 3. MOTOR DE PROCESAMIENTO ESTRICTO POR ID
+// 3. MOTOR DE EVALUACIÓN DE ENTRADA Y SALIDA (SECUNDARIA)
 // ==========================================
 function procesarSecundaria(dataMemoria, reglas, fechaInicioStr, fechaFinStr) {
   const mInicio = moment(fechaInicioStr).startOf('day');
@@ -112,23 +109,6 @@ function procesarSecundaria(dataMemoria, reglas, fechaInicioStr, fechaFinStr) {
     aux.add(1, 'days');
   }
 
-  const mapaCompleto = {};
-  reglas.filter(r => r.activo).forEach(r => {
-    const idKey = limpiarId(r.id_empleado);
-    mapaCompleto[idKey] = {
-      id_empleado: idKey,
-      nombre: r.nombre_completo,
-      asistencias: {},
-      salidasDetectadas: {},
-      retardos: {},
-      paracaidismo: {},
-      limites: {},
-      faltasEspeciales: {},
-      reglaInicio: r.limite_retardo_inicio ? r.limite_retardo_inicio.substring(0, 5) : '07:00',
-      reglaFin: r.limite_retardo_fin ? r.limite_retardo_fin.substring(0, 5) : '15:00'
-    };
-  });
-
   const toMins = (hStr) => {
     if (!hStr || !hStr.includes(':')) return 0;
     const [h, m] = hStr.split(':').map(Number);
@@ -136,67 +116,99 @@ function procesarSecundaria(dataMemoria, reglas, fechaInicioStr, fechaFinStr) {
   };
 
   const agrupadoPorColaboradorYDia = {};
+  const resultadoEmpleados = {};
+
+  // Inicializar empleados con base en Supabase (horario base secundaria: 07:00 - 15:00)
+  reglas.filter(r => r.activo).forEach(r => {
+    const idKey = limpiarId(r.id_empleado);
+    resultadoEmpleados[idKey] = {
+      id_empleado: idKey,
+      nombre: r.nombre_completo,
+      horario_base: {
+        entrada_oficial: r.limite_retardo_inicio ? r.limite_retardo_inicio.substring(0, 5) : '07:00',
+        salida_oficial: r.limite_retardo_fin ? r.limite_retardo_fin.substring(0, 5) : '15:00'
+      },
+      dias: {}
+    };
+
+    agrupadoPorColaboradorYDia[idKey] = {};
+    diasLaborales.forEach(dia => {
+      agrupadoPorColaboradorYDia[idKey][dia] = [];
+    });
+  });
+
+  // Agrupar marcajes sin duplicados exactos
   dataMemoria.forEach(reg => {
     const mFechaReg = moment(reg.fechaDate);
     if (mFechaReg.isSameOrAfter(mInicio) && mFechaReg.isSameOrBefore(mFin)) {
       const fKey = reg.fechaStr;
       const idEmp = limpiarId(reg.id_empleado);
 
-      // Cruce estricto por ID universal contra Supabase
-      if (mapaCompleto[idEmp]) {
-        if (!agrupadoPorColaboradorYDia[idEmp]) agrupadoPorColaboradorYDia[idEmp] = {};
-        if (!agrupadoPorColaboradorYDia[idEmp][fKey]) agrupadoPorColaboradorYDia[idEmp][fKey] = [];
-        agrupadoPorColaboradorYDia[idEmp][fKey].push(reg.hora);
+      if (agrupadoPorColaboradorYDia[idEmp] && agrupadoPorColaboradorYDia[idEmp][fKey]) {
+        const horaLimpia = reg.hora.substring(0, 5);
+        if (!agrupadoPorColaboradorYDia[idEmp][fKey].includes(horaLimpia)) {
+          agrupadoPorColaboradorYDia[idEmp][fKey].push(horaLimpia);
+        }
       }
     }
   });
 
-  Object.keys(mapaCompleto).forEach(idEmp => {
-    const emp = mapaCompleto[idEmp];
-    const diasColaborador = agrupadoPorColaboradorYDia[idEmp] || {};
+  // Evaluar cada día laboral para cada colaborador
+  Object.keys(resultadoEmpleados).forEach(idEmp => {
+    const emp = resultadoEmpleados[idEmp];
+    const minEntradaOficial = toMins(emp.horario_base.entrada_oficial);
 
     diasLaborales.forEach(dia => {
-      const checadasDia = diasColaborador[dia];
-      if (!checadasDia || checadasDia.length === 0) return;
+      const checadas = (agrupadoPorColaboradorYDia[idEmp][dia] || []).sort((a, b) => toMins(a) - toMins(b));
 
-      checadasDia.sort((a, b) => toMins(a) - toMins(b));
-      const primeraChecada = checadasDia[0];
-      const ultimaChecada = checadasDia.length > 1 ? checadasDia[checadasDia.length - 1] : null;
-
-      const minMarcaje = toMins(primeraChecada);
-      const minEntradaBase = toMins(emp.reglaInicio);
-      const minToleranciaFin = minEntradaBase + 30;
-      const minSalidaJornada = toMins(emp.reglaFin);
-
-      // Evaluación estricta de asistencia a tiempo vs incidencias
-      if (minMarcaje <= minEntradaBase) {
-        emp.asistencias[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'ANTES_DE_HORA';
-      } else if (minMarcaje > minEntradaBase && minMarcaje <= minToleranciaFin) {
-        emp.retardos[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'RETARDO';
-      } else if (minMarcaje > minToleranciaFin && minMarcaje <= minSalidaJornada) {
-        emp.paracaidismo[dia] = primeraChecada;
-        emp.limites[dia] = primeraChecada;
-        emp.faltasEspeciales[dia] = 'PARACAIDISTA';
-      } else {
-        emp.faltasEspeciales[dia] = 'SALIDA_O_DESPUES';
+      if (checadas.length === 0) {
+        emp.dias[dia] = {
+          estatus_entrada: 'FALTA',
+          hora_entrada: null,
+          hora_salida: null,
+          marcajes_crudos: []
+        };
+        return;
       }
 
-      if (ultimaChecada && toMins(ultimaChecada) >= minSalidaJornada) {
-        emp.salidasDetectadas[dia] = ultimaChecada;
+      const primeraChecada = checadas[0];
+      const minPrimeraChecada = toMins(primeraChecada);
+
+      // Evaluación de entrada: A tiempo vs Retardo
+      const estatusEntrada = minPrimeraChecada <= minEntradaOficial ? 'A_TIEMPO' : 'RETARDO';
+
+      let horaSalida = null;
+
+      if (checadas.length > 1) {
+        const ultimaChecada = checadas[checadas.length - 1];
+        const minUltimaChecada = toMins(ultimaChecada);
+
+        // Descartar rebotes o checadas casi idénticas a la entrada (mínimo 30 min de diferencia)
+        if (minUltimaChecada - minPrimeraChecada >= 30) {
+          horaSalida = ultimaChecada;
+        }
       }
+
+      emp.dias[dia] = {
+        estatus_entrada: estatusEntrada,
+        hora_entrada: primeraChecada,
+        hora_salida: horaSalida,
+        marcajes_crudos: checadas
+      };
     });
   });
 
-  return { resultados: mapaCompleto, diasLaborales };
+  return {
+    diasLaborales,
+    resultados: resultadoEmpleados
+  };
 }
 
 // ==========================================
 // 4. EJECUCIÓN PRINCIPAL
 // ==========================================
 async function run() {
-  console.log('🚀 Iniciando Test Runner Secundaria Toluca...\n');
+  console.log('🚀 Iniciando Test Runner Secundaria Toluca (Entradas, Retardos y Salidas)...\n');
 
   const { data: reglasDb, error } = await supabase.from(TABLA_SUPABASE).select('*');
   if (error) {
@@ -206,9 +218,12 @@ async function run() {
   console.log(`✅ Reglas recuperadas: ${reglasDb.length} registros.`);
 
   const rutaCompleta = path.join(__dirname, ARCHIVO_EXCEL);
+  if (!fs.existsSync(rutaCompleta)) {
+    console.error(`❌ No se encontró el archivo Excel en: ${rutaCompleta}`);
+    return;
+  }
+
   const workbook = XLSX.readFile(rutaCompleta, { cellDates: true });
-  
-  // Selección de hoja fija: Busca explícitamente "Hoja1" o toma la primera disponible
   const sheetName = workbook.SheetNames.includes('Hoja1') ? 'Hoja1' : workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
   console.log(`📄 Leyendo hoja: "${sheetName}"`);
@@ -223,11 +238,10 @@ async function run() {
   sheet['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxRow, c: maxCol } });
 
   const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
-  console.log(`📏 Filas totales reales leídas en hoja: ${rawData.length}`);
+  console.log(`📏 Filas totales leídas: ${rawData.length}`);
 
   const marcajesEnMemoria = parsearExcelSecundaria(rawData);
 
-  // Auditoría rápida de match por ID
   const idsExcel = new Set(marcajesEnMemoria.map(m => m.id_empleado));
   const idsSupabase = new Set(reglasDb.map(r => limpiarId(r.id_empleado)));
   const matches = [...idsExcel].filter(id => idsSupabase.has(id));
@@ -237,6 +251,8 @@ async function run() {
 
   fs.writeFileSync(path.join(__dirname, '03_resultado_final.json'), JSON.stringify(resultadoFinal, null, 2));
   console.log('✅ Archivo generado: 03_resultado_final.json con éxito.');
+  console.log(`Días evaluados: ${resultadoFinal.diasLaborales.length}`);
+  console.log(`Empleados evaluados: ${Object.keys(resultadoFinal.resultados).length}\n`);
 }
 
 run();
