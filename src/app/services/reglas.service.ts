@@ -51,24 +51,51 @@ export class ReglasService {
   }
 
   async guardarReglasMasivas(plantel: string, subSede: string, reglas: ReglaEmpleado[]) {
-  const nombreTabla = this.resolverNombreTabla(plantel, subSede);
-  
-  const reglasLimpias = reglas.map(r => ({
-    // Si ya existe en Supabase, enviamos su 'id' (UUID) para que actualice la misma fila
-    ...(r.id ? { id: r.id } : {}),
-    id_empleado: String(r.id_empleado || '').trim(),
-    numero_empleado: r.numero_empleado ? String(r.numero_empleado).trim() : null,
-    nombre_completo: String(r.nombre_completo || '').trim(),
-    limite_retardo_inicio: r.limite_retardo_inicio,
-    limite_retardo_fin: r.limite_retardo_fin,
-    activo: Boolean(r.activo)
-  }));
+    const nombreTabla = this.resolverNombreTabla(plantel, subSede);
 
-  // Al hacer match por 'id', actualizará exactamente la fila original sin duplicar
-  return await this.supabase
-    .from(nombreTabla)
-    .upsert(reglasLimpias, { onConflict: 'id' });
-}
+    // Separar los registros existentes de los nuevos
+    const existentes = reglas.filter(r => !!r.id);
+    const nuevos = reglas.filter(r => !r.id);
+
+    // 1. Actualizar los que ya existen (tienen id UUID de Supabase)
+    if (existentes.length > 0) {
+      const payloadUpdate = existentes.map(r => ({
+        id: r.id,
+        id_empleado: String(r.id_empleado || '').trim(),
+        numero_empleado: r.numero_empleado ? String(r.numero_empleado).trim() : null,
+        nombre_completo: String(r.nombre_completo || '').trim().toUpperCase(),
+        limite_retardo_inicio: r.limite_retardo_inicio,
+        limite_retardo_fin: r.limite_retardo_fin,
+        activo: Boolean(r.activo)
+      }));
+
+      const { error: errUpdate } = await this.supabase
+        .from(nombreTabla)
+        .upsert(payloadUpdate); // Como todos traen su 'id', actualiza sobre la misma fila sin duplicar
+
+      if (errUpdate) return { error: errUpdate };
+    }
+
+    // 2. Insertar los nuevos (no traen id)
+    if (nuevos.length > 0) {
+      const payloadInsert = nuevos.map(r => ({
+        id_empleado: String(r.id_empleado || '').trim(),
+        numero_empleado: r.numero_empleado ? String(r.numero_empleado).trim() : null,
+        nombre_completo: String(r.nombre_completo || '').trim().toUpperCase(),
+        limite_retardo_inicio: r.limite_retardo_inicio,
+        limite_retardo_fin: r.limite_retardo_fin,
+        activo: Boolean(r.activo)
+      }));
+
+      const { error: errInsert } = await this.supabase
+        .from(nombreTabla)
+        .insert(payloadInsert); // Genera su nuevo UUID automáticamente
+
+      if (errInsert) return { error: errInsert };
+    }
+
+    return { error: null };
+  }
 
   async saveRegla(plantel: string, subSede: string, regla: ReglaEmpleado) {
     const nombreTabla = this.resolverNombreTabla(plantel, subSede);
