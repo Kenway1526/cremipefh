@@ -51,22 +51,24 @@ export class ReglasService {
   }
 
   async guardarReglasMasivas(plantel: string, subSede: string, reglas: ReglaEmpleado[]) {
-    const nombreTabla = this.resolverNombreTabla(plantel, subSede);
-    
-    // Mapear estrictamente solo las columnas permitidas en la base de datos, 
-    // excluyendo el 'id' generado por el cliente si interfiere con el esquema.
-    const reglasLimpias = reglas.map(r => ({
-      id_empleado: String(r.id_empleado || '').trim(),
-      nombre_completo: String(r.nombre_completo || '').trim(),
-      limite_retardo_inicio: r.limite_retardo_inicio,
-      limite_retardo_fin: r.limite_retardo_fin,
-      activo: Boolean(r.activo)
-    }));
+  const nombreTabla = this.resolverNombreTabla(plantel, subSede);
+  
+  const reglasLimpias = reglas.map(r => ({
+    // Si ya existe en Supabase, enviamos su 'id' (UUID) para que actualice la misma fila
+    ...(r.id ? { id: r.id } : {}),
+    id_empleado: String(r.id_empleado || '').trim(),
+    numero_empleado: r.numero_empleado ? String(r.numero_empleado).trim() : null,
+    nombre_completo: String(r.nombre_completo || '').trim(),
+    limite_retardo_inicio: r.limite_retardo_inicio,
+    limite_retardo_fin: r.limite_retardo_fin,
+    activo: Boolean(r.activo)
+  }));
 
-    return await this.supabase
-      .from(nombreTabla)
-      .upsert(reglasLimpias, { onConflict: 'id_empleado' });
-  }
+  // Al hacer match por 'id', actualizará exactamente la fila original sin duplicar
+  return await this.supabase
+    .from(nombreTabla)
+    .upsert(reglasLimpias, { onConflict: 'id' });
+}
 
   async saveRegla(plantel: string, subSede: string, regla: ReglaEmpleado) {
     const nombreTabla = this.resolverNombreTabla(plantel, subSede);
